@@ -30,7 +30,7 @@ for i in range(len(coords_segments) - 1):
 common_segment_props = {
     "delay_segment": 0,
     "delta_dip": 5.94,
-    "delta_strike": 10.0,
+    "delta_strike": 13.6,
     # "dip": 60.,
     "dip": 90.0,
     "dip_subfaults": 5,
@@ -48,6 +48,25 @@ stk_subfaults_all = []
 
 # Determine northernmost segment for fixed hypocenter
 northernmost_idx = np.argmax([(y1 + y2) / 2 for x1, y1, x2, y2 in segments])
+
+def determine_best_delta_strike():
+    candidate_delta_strikes = np.arange(5,35,0.5)
+    diff = [0 for i in range(len(candidate_delta_strikes))]
+    for idx, (lon1, lat1, lon2, lat2) in enumerate(segments):
+        lons = [lon1, lon2]
+        lats = [lat1, lat2]
+        x1x2, y1y2 = transformer.transform(lons, lats)
+
+        x1, x2 = x1x2
+        y1, y2 = y1y2
+
+        # Compute segment length
+        length_m = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        length_km = length_m / 1000.0
+        for i, delta_strike in enumerate(candidate_delta_strikes):
+            stk_subfaults = max(1, int(np.floor((length_km / delta_strike))))
+            diff[i] += length_km - delta_strike* stk_subfaults
+    print(diff)
 
 for idx, (lon1, lat1, lon2, lat2) in enumerate(segments):
     lons = [lon1, lon2]
@@ -68,7 +87,7 @@ for idx, (lon1, lat1, lon2, lat2) in enumerate(segments):
 
     # delta_strike adjusted so delta_strike * stk_subfaults = length_km
     delta_strike = common_segment_props["delta_strike"]
-    stk_subfaults = int(length_km / delta_strike)
+    stk_subfaults = max(1, int(np.floor((length_km / delta_strike))))
     delta_strike = length_km / stk_subfaults
 
     if y1 < y2:
@@ -97,7 +116,7 @@ for idx, (lon1, lat1, lon2, lat2) in enumerate(segments):
 
         xi = x2 + yrel * (x1 - x2)
         yi = y2 + yrel * (y1 - y2)
-        lat, lon = transformer_inverse.transform(xi, yi)
+        updated_hypo_lon, updated_hypo_lat = transformer_inverse.transform(xi, yi)
     else:
         lat = lats[0]
         lon = lons[0]
@@ -181,3 +200,31 @@ for idx, (x1, y1, x2, y2) in enumerate(segments):
 slip_output_path = "model_space.json"
 with open(slip_output_path, "w") as f:
     json.dump(segment_slip_configs, f, indent=4)
+
+tensor_data = {
+    "centroid_depth": 20.1,
+    "centroid_lat": 21.12,
+    "centroid_lon": 95.98,
+    "datetime": "2025-03-28T06:20:54",
+    "depth": 10.0,
+    "half_duration": 21.1,
+    "lat": 22.001,
+    "lon": 95.925,
+    "moment_mag": 5.127706458061781e27,
+    "mpp": 7.79e26,
+    "mrp": 8.94e26,
+    "mrr": -2.3e25,
+    "mrt": 2.5e27,
+    "mtp": 4.35e27,
+    "mtt": -7.55e26,
+    "time_shift": 29.5,
+    "timedelta": 4163213.860302
+}
+tensor_data |= {
+    "lat": updated_hypo_lat,
+    "lon": updated_hypo_lon,
+}
+
+tensor_info_fn = "tensor_info.json"
+with open(tensor_info_fn, "w") as f:
+    json.dump(tensor_data, f, indent=4)
