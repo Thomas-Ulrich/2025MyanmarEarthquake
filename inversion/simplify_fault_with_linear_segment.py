@@ -12,7 +12,9 @@ gdf = gpd.read_file("data/surface_rupture_sentinel_v2.shp")
 # Step 2: Project to UTM or any metric CRS for accurate distance-based simplification
 # You may want to select an appropriate UTM zone manually
 # gdf_proj = gdf.to_crs("EPSG:32646")  # Example: UTM zone 46N (covers part of Myanmar)
-gdf_proj = gdf.to_crs("+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=96.00 +lat_0=20.50")  # Example: UTM zone 45N
+gdf_proj = gdf.to_crs(
+    "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=96.00 +lat_0=20.50"
+)  # Example: UTM zone 45N
 
 # Step 3: Apply Douglas-Peucker simplification (epsilon in meters)
 epsilon = 1000  # meters
