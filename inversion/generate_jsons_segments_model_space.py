@@ -2,12 +2,17 @@ import numpy as np
 import json
 from pyproj import Transformer
 
+projection = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=96.00 +lat_0=20.50"
 transformer = Transformer.from_crs(
     "epsg:4326",
-    "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=96.00 +lat_0=20.50",
+    projection,
     always_xy=True,
 )
-
+transformer_inverse = Transformer.from_crs(
+    projection,
+    "epsg:4326",
+    always_xy=True,
+)
 
 coords_segments = [
     [95.96818281, 22.74322665],
@@ -85,9 +90,14 @@ for idx, (lon1, lat1, lon2, lat2) in enumerate(segments):
     if idx == northernmost_idx:
         lat = 22.001
         lon = 95.925
-        yrel = (lat - lats[1]) / (lats[0] - lats[1])
-        print(yrel)
+        xt, yt = transformer.transform(lon, lat)
+
+        yrel = (yt - y2) / (y1 - y2)
         hyp_stk = int(np.round(yrel * stk_subfaults))
+
+        xi = x2 + yrel * (x1 - x2)
+        yi = y2 + yrel * (y1 - y2)
+        lat, lon = transformer_inverse.transform(xi, yi)
     else:
         lat = lats[0]
         lon = lons[0]
