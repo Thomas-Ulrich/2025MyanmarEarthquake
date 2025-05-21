@@ -31,7 +31,7 @@ common_segment_props = {
     "delay_segment": 0,
     "delta_dip": 5.94,
     "delta_strike": 13.6,
-    #"dip": 60.0,
+    # "dip": 60.0,
     "dip": 80,
     "dip_subfaults": 5,
     "hyp_stk": 35,
