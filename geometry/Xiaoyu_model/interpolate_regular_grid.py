@@ -22,7 +22,7 @@ def create_yz_probe_grid(surface, spacing_y, spacing_z, x_fixed=0.0):
     grid.SetSpacing(1.0, spacing_y, spacing_z)  # x-spacing doesn't matter
     grid.SetDimensions(1, ny, nz)
     y_coords = np.linspace(y_min, y_min + (ny - 1) * spacing_y, ny)
-    z_coords = np.linspace(z_min, z_min + (nz - 1) * spacing_z, nz)
+    z_coords = np.linspace(z_max - (nz - 1) * spacing_z, z_max, nz)
 
     return y_coords, z_coords, grid
 
@@ -51,16 +51,27 @@ y, z, grid = create_yz_probe_grid(yz_surface, spacing_y=4e3, spacing_z=2e3, x_fi
 
 probed_output = probe(yz_surface, grid)
 out = {}
-out["Sls"] = extract_numpy_array(probed_output, "sls")
-out["Sld"] = extract_numpy_array(probed_output, "sld")
-ny, nz = out["Sls"].shape
+out["strike_slip"] = extract_numpy_array(probed_output, "sls")
+out["dip_slip"] = extract_numpy_array(probed_output, "sld")
+ny, nz = out["strike_slip"].shape
 
-out["Sls"] = out["Sls"].reshape(nz, ny)
-out["Sld"] = out["Sld"].reshape(nz, ny)
+for var in ["strike_slip", "dip_slip"]:
+    out[var] = out[var].reshape(nz, ny)
 
-out["slip"] = np.sqrt(out["Sls"] ** 2 + out["Sld"] ** 2)
+for var in ["rupture_onset", "effective_rise_time", "acc_time"]:
+    out[var] = 0.0 * out["strike_slip"]
+out["rake_interp_low_slip"] = 0.0 * out["strike_slip"] + 180
+
+
 prefix = "model"
-variables = ["Sls", "Sld", "slip"]
+variables = [
+    "strike_slip",
+    "dip_slip",
+    "rupture_onset",
+    "effective_rise_time",
+    "acc_time",
+    "rake_interp_low_slip",
+]
 
 for i, var in enumerate(variables):
     writeNetcdf(

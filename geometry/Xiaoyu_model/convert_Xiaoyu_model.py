@@ -13,6 +13,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 folder = args.folder
+znew0 = 500.0
 
 # Load vertex data
 with open(f"{folder}/vert.txt", "r") as f:
@@ -76,6 +77,7 @@ else:
     slip_z = slip_depth
 
     slip_points = np.column_stack([slip_x, slip_y, slip_z])
+
     # Match each mesh point to the closest slip point
     tree = cKDTree(slip_points)
     dist, idx = tree.query(points)
@@ -89,8 +91,8 @@ else:
 
 
 # Plotting
-grid.plot(scalars="sls", show_edges=True, cmap="viridis" if cell_data else "viridis_r")
-grid.plot(scalars="sld", show_edges=True, cmap="viridis" if cell_data else "viridis_r")
+# grid.plot(scalars="sls", show_edges=True, cmap="viridis" if cell_data else "viridis_r")
+# grid.plot(scalars="sld", show_edges=True, cmap="viridis" if cell_data else "viridis_r")
 
 
 if cell_data:
@@ -109,4 +111,8 @@ if cell_data:
         reduce_precision=True,
     )
 else:
+    grid.points[grid.points[:, 2] == 0, 2] = znew0
     grid.save("fault_slip.vtk")
+    # Save geometry as STL
+    surface = grid.extract_surface().triangulate()
+    surface.save("mesh.stl")
