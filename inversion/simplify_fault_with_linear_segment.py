@@ -43,6 +43,11 @@ for geom in gdf_simplified.geometry:
     x, y = geom.xy
     ax.plot(x, y, "x", color="red", label="Simplified Points")
 
+for i in range(4):
+    trace = np.loadtxt(f"trace{i}.txt")
+    ax.plot(trace[:, 0], trace[:, 1], color="black")
+
+
 ax.legend()
 ax.set_title(f"Douglas-Peucker Simplification (ε = {epsilon} m)")
 ax.set_xlabel("Longitude")
