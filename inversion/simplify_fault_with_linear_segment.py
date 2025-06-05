@@ -44,7 +44,7 @@ for geom in gdf_simplified.geometry:
     ax.plot(x, y, "x", color="red", label="Simplified Points")
 
 for i in range(4):
-    trace = np.loadtxt(f"trace{i}.txt")
+    trace = np.loadtxt(f"trace_usgs/trace{i}.txt")
     ax.plot(trace[:, 0], trace[:, 1], color="black")
 
 
