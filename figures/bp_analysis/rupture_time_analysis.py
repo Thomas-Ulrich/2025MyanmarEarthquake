@@ -63,12 +63,12 @@ _, lats = transformeri.transform(trace_nodes[:, 0], trace_nodes[:, 1])
 
 # fig = plt.figure(figsize=(5.5, 3.0))
 fig, (ax, ax_hist) = plt.subplots(
-    2, 1, figsize=(8, 6), sharex=True, gridspec_kw={"height_ratios": [3, 1]}
+    1, 2, figsize=(8, 6), sharey=True, gridspec_kw={"width_ratios": [3, 1]}
 )
 
 # ax = fig.add_subplot(111)
-# ax.set_xlabel("latitude")
-ax.set_ylabel("rupture time (s)")
+ax.set_ylabel("latitude")
+ax.set_xlabel("rupture time (s)")
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 ax.get_xaxis().tick_bottom()
@@ -116,23 +116,23 @@ for i, fn in enumerate(args.fault):
             RTp2sigma[ki] = np.nan
 
     ax.plot(
-        lats,
         RT_med,
+        lats,
         "royalblue",
         linewidth=lw * (1 + 0.5 * i),
         label="rupture time median",
     )
     ax.plot(
-        lats,
         RTm2sigma,
+        lats,
         "royalblue",
         linewidth=lw * (1 + 0.5 * i),
         label="rupture time 95%",
         linestyle=":",
     )
     ax.plot(
-        lats,
         RTp2sigma,
+        lats,
         "royalblue",
         linewidth=lw * (1 + 0.5 * i),
         label="rupture time 5%",
@@ -142,15 +142,15 @@ for i, fn in enumerate(args.fault):
 for arr in ["au", "eu", "ak"]:
     bp = np.loadtxt(f"filtered_result_{arr}.txt")
     ax.plot(
-        bp[:, 0],
         bp[:, 2],
+        bp[:, 0],
         "x",
         label=f"BP {arr}",
     )
 
 ax.plot(
-    19.78,
     50,
+    19.78,
     "o",
     label="NPW",
 )
@@ -161,22 +161,45 @@ ax.legend(loc="lower left")
 tmd = pd.read_csv("tmd_catalog_output.txt", delim_whitespace=True)
 
 # Filter lats to 18–23
-lat_filtered = tmd[
+tmd = tmd[
     (tmd["Latitude"] >= 18)
     & (tmd["Latitude"] <= 23)
     & (tmd["Longitude"] >= 95)
     & (tmd["Longitude"] <= 97)
-]["Latitude"]
+]
+# ["Latitude"]
 
+lat_filtered = tmd["Latitude"]
 
 # Define latitude bins
 lat_bins = np.arange(18, 23.2, 0.2)  # step of 0.2
 hist_counts, bin_edges = np.histogram(lat_filtered, bins=lat_bins)
 lat_bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
 
-ax_hist.bar(lat_bin_centers, hist_counts, width=0.18, color="gray", alpha=0.6)
-ax_hist.set_ylabel("aftershock count")
-ax_hist.set_xlabel("latitude")
+# ax_hist.bar(lat_bin_centers, hist_counts, width=0.18, color="gray", alpha=0.6)
+
+# Separate latitudes by magnitude ranges
+lat_m1 = tmd[tmd["Magnitude"] < 3.0]["Latitude"]
+lat_m2 = tmd[tmd["Magnitude"] >= 3.0]["Latitude"]
+
+# Define latitude bins
+lat_bins = np.arange(18, 23.2, 0.2)
+
+# Plot stacked histogram
+# fig, ax_hist = plt.subplots(figsize=(8, 3))
+
+ax_hist.hist(
+    [lat_m1, lat_m2][::-1],
+    bins=lat_bins,
+    stacked=True,
+    orientation="horizontal",
+    color=["lightblue", "green"],
+    label=["M < 3", "M ≥ 3"][::-1],
+    alpha=0.7,
+)
+ax_hist.set_xlabel("aftershock count")
+# ax_hist.set_ylabel("latitude")
+ax_hist.legend()
 
 
 if not os.path.exists("output"):
