@@ -6,6 +6,9 @@ import sys
 import argparse
 import matplotlib.pyplot as plt
 import matplotlib
+import re
+from scipy.interpolate import interp1d
+import pandas as pd
 
 
 class FaultReceiverData:
@@ -25,8 +28,8 @@ class FaultReceiverData:
             self.Pn0 = float(fid.readline().split()[2])
             self.Ts0 = float(fid.readline().split()[2])
             self.Td0 = float(fid.readline().split()[2])
-            print("location", self.x, self.y, self.z)
-            print("ini stress", self.Pn0, self.Ts0, self.Td0)
+            # print("location", self.x, self.y, self.z)
+            # print("ini stress", self.Pn0, self.Ts0, self.Td0)
             mydata = np.loadtxt(fid)
 
         self.ndt, ndata = mydata.shape
@@ -66,16 +69,43 @@ class FaultReceiverData:
             self.Tmp = []
 
 
-fname = "/home/ulrich/trash/dyn_0017_coh0.25_0.0_B1.0_C0.2_mud0.3_mus0.6_sn15.0-faultreceiver-00001-00006.dat"
+def get_rupture_time(SRs):
+    threshold_main = 0.15
+    threshold_pre = 0.01
+    id_pre = None
+    # Step 1: First index where SR > 0.15
+    indices_main = np.where(SRs > threshold_main)[0]
+
+    if indices_main.size > 0:
+        id0 = indices_main[0]
+
+        # Step 2: Last index before id0 where SR > 0.01
+        indices_pre = np.where((SRs[:id0] < threshold_pre))[0]
+        if indices_pre.size > 0:
+            id_pre = indices_pre[-1] + 1
+        else:
+            id_pre = None  # or handle as needed
+            print(f"Note: No SR < {threshold_pre} found before index {id0} in {fname}")
+    else:
+        print(f"Warning: No SR > {threshold_main} found in {fname}")
+    return id_pre
+
+
+parser = argparse.ArgumentParser(description="compare with Latour slip rate")
+parser.add_argument("fault_receiver", help="seissol fault output file")
+parser.add_argument(
+    "--plot_all",
+    action="store_true",
+    help="Plot all slip rate functions (default: plot only the 10 best)",
+)
+
+args = parser.parse_args()
+SR_threshold = 0.15
+
 switchNormal = False
-frd = FaultReceiverData(fname, switchNormal)
 
-id0 = np.where(frd.SRs > 0.01)[0][0]
-t0 = frd.Time[id0]
-
-
-fig = plt.figure(figsize=(6.0, 7.5 * 5.0 / 16), dpi=80)
-ax = fig.add_subplot(111)
+rec_files = sorted(glob.glob(f"{args.fault_receiver}*-faultreceiver*"))
+rec_files = [fn for fn in rec_files if "dyn-kinmod" not in fn and "fl33" not in fn]
 
 ps = 12
 matplotlib.rcParams.update({"font.size": ps})
@@ -84,9 +114,17 @@ matplotlib.rc("xtick", labelsize=ps)
 matplotlib.rc("ytick", labelsize=ps)
 
 
-print(id0)
-plt.plot(frd.Time[id0:] - t0, frd.SRs[id0:], label="preferred model")
+fig = plt.figure(figsize=(4.0, 7.5 * 5.0 / 16), dpi=80)
+ax = fig.add_subplot(111)
+
 data_Latour = np.loadtxt("Latour.txt", delimiter=",")
+# let add some zero after 2s
+time_after = np.arange(2, 4, 0.1)
+SR_after = np.zeros_like(time_after)
+extra_data = np.column_stack((time_after, SR_after))
+data_Latour = np.vstack((data_Latour, extra_data))
+
+
 plt.plot(
     data_Latour[:, 0],
     data_Latour[:, 1],
@@ -97,7 +135,87 @@ plt.plot(
     color="black",
 )
 
-plt.legend(frameon=False)
+results = {}
+results["fault_receiver_fname"] = []
+results["slip_rate_rms"] = []
+wrms = np.full(len(rec_files), np.inf, dtype=float)
+
+
+for i, fname in enumerate(rec_files):
+    frd = FaultReceiverData(fname, switchNormal)
+
+    id0 = get_rupture_time(frd.SRs)
+    if not id0:
+        continue
+
+    match = re.search(r"dyn[/_-]([^_]+)_", fname)
+    if match:
+        sim_id = int(match.group(1))
+    else:
+        sim_id = None  # or raise an error
+
+    t0 = frd.Time[id0]
+
+    # Shift time and extract relevant arrays
+    time_shifted = frd.Time[id0:] - t0
+    sr_shifted = frd.SRs[id0:]
+
+    # Plot preferred model
+    if args.plot_all:
+        plt.plot(time_shifted, sr_shifted, label=f"{sim_id}")
+
+    # Interpolate SR at Latour time points
+    interp_func = interp1d(
+        time_shifted, sr_shifted, bounds_error=False, fill_value=np.nan
+    )
+    sr_interp = interp_func(data_Latour[:, 0])
+
+    # Compute RMS error, ignoring NaNs
+    valid = ~np.isnan(sr_interp)
+    rms = np.sqrt(np.mean((sr_interp[valid] - data_Latour[valid, 1]) ** 2))
+    wrms[i] = rms
+    print(f"{fname}, onset {t0:.2f}s, RMS error vs Latour: {rms:.4f}")
+    results["fault_receiver_fname"].append(fname)
+    results["slip_rate_rms"].append(wrms[i])
+
+top10_indices = np.argsort(wrms)[:10]
+
+print("10 best models:")
+for k, modeli in enumerate(top10_indices[::-1]):
+    fname = rec_files[modeli]
+    print(10 - k, fname, wrms[modeli])
+    if not args.plot_all:
+        frd = FaultReceiverData(fname, switchNormal)
+
+        id0 = get_rupture_time(frd.SRs)
+        if not id0:
+            continue
+
+        t0 = frd.Time[id0]
+
+        match = re.search(r"dyn[/_-]([^_]+)_", fname)
+        if match:
+            sim_id = int(match.group(1))
+        else:
+            sim_id = None  # or raise an error
+
+        # Shift time and extract relevant arrays
+        time_shifted = frd.Time[id0:] - t0
+        sr_shifted = frd.SRs[id0:]
+
+        # Plot preferred model
+        plt.plot(time_shifted, sr_shifted, label=f"{sim_id}, {float(wrms[modeli]):.2f}")
+
+
+dfr = pd.DataFrame(results)
+fn = "rms_slip_rate.csv"
+dfr.to_csv(fn, index=True, index_label="id")
+print(f"done writing {fn}")
+
+plt.legend(
+    frameon=False, fontsize=8, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 1.05)
+)
+# plt.legend(frameon=False, fontsize=8, ncol=2)
 plt.xlim([0, 4])
 plt.xlabel(f"Time (s) since {t0:.1f}s post-rupture onset")
 # plt.xlabel(f"Time (seconds). time = 0 is {t0:.1f}s after rupture onset in the dynamic rupture model)")
@@ -111,6 +229,6 @@ ax.get_yaxis().tick_left()
 
 
 fn = "CCTV_comparison.svg"
-plt.savefig(fn)
-
-plt.show()
+plt.savefig(fn, bbox_inches="tight")
+print(f"done writing {fn}")
+# plt.show()
