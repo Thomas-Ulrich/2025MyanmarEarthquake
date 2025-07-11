@@ -91,6 +91,38 @@ def get_rupture_time(SRs):
     return id_pre
 
 
+def get_max_cross_correlation(frd, data_Latour):
+    dt = 0.01  # sampling interval
+    T = frd.Time[-1]
+    time_grid = np.arange(0, T, dt)
+
+    # Build interpolated signals of equal length
+    interp_model = interp1d(frd.Time, frd.SRs, bounds_error=False, fill_value=0.0)
+    model_signal = interp_model(time_grid)
+
+    interp_latour = interp1d(
+        data_Latour[:, 0] + 0.5 * T,
+        data_Latour[:, 1],
+        bounds_error=False,
+        fill_value=0.0,
+    )
+    latour_signal = interp_latour(time_grid)
+
+    # Zero-mean both signals
+    model_zm = model_signal - np.mean(model_signal)
+    latour_zm = latour_signal - np.mean(latour_signal)
+
+    # Compute cross-correlation
+    cross_corr = np.correlate(model_zm, latour_zm, mode="full")
+    lags = np.arange(-len(model_zm) + 1, len(model_zm))
+    best_lag = lags[np.argmax(cross_corr)]
+
+    # Time shift in seconds
+    time_shift = best_lag * dt
+    # print(f"Best alignment lag: {best_lag} samples, or {time_shift:.3f} s")
+    return 0.5 * T + time_shift
+
+
 parser = argparse.ArgumentParser(description="compare with Latour slip rate")
 parser.add_argument("fault_receiver", help="seissol fault output file")
 parser.add_argument(
@@ -98,6 +130,12 @@ parser.add_argument(
     action="store_true",
     help="Plot all slip rate functions (default: plot only the 10 best)",
 )
+parser.add_argument(
+    "--align_using_slip_rate_threshold",
+    action="store_true",
+    help="align signals based slip rate threhold and not cross-correlation",
+)
+
 
 args = parser.parse_args()
 SR_threshold = 0.15
@@ -123,6 +161,11 @@ time_after = np.arange(2, 4, 0.1)
 SR_after = np.zeros_like(time_after)
 extra_data = np.column_stack((time_after, SR_after))
 data_Latour = np.vstack((data_Latour, extra_data))
+if not args.align_using_slip_rate_threshold:
+    time_before = np.arange(-2, 0, 0.1)
+    SR_before = np.zeros_like(time_before)
+    extra_data = np.column_stack((time_before, SR_before))
+    data_Latour = np.vstack((extra_data, data_Latour))
 
 
 plt.plot(
@@ -136,9 +179,9 @@ plt.plot(
 )
 
 results = {}
-results["fault_receiver_fname"] = []
-results["slip_rate_rms"] = []
 wrms = np.full(len(rec_files), np.inf, dtype=float)
+results["fault_receiver_fname"] = rec_files
+results["slip_rate_rms"] = wrms
 
 
 for i, fname in enumerate(rec_files):
@@ -148,13 +191,9 @@ for i, fname in enumerate(rec_files):
     if not id0:
         continue
 
-    match = re.search(r"dyn[/_-]([^_]+)_", fname)
-    if match:
-        sim_id = int(match.group(1))
-    else:
-        sim_id = None  # or raise an error
-
     t0 = frd.Time[id0]
+    if not args.align_using_slip_rate_threshold:
+        t0 = get_max_cross_correlation(frd, data_Latour)
 
     # Shift time and extract relevant arrays
     time_shifted = frd.Time[id0:] - t0
@@ -162,6 +201,11 @@ for i, fname in enumerate(rec_files):
 
     # Plot preferred model
     if args.plot_all:
+        match = re.search(r"dyn[/_-]([^_]+)_", fname)
+        if match:
+            sim_id = int(match.group(1))
+        else:
+            sim_id = None  # or raise an error
         plt.plot(time_shifted, sr_shifted, label=f"{sim_id}")
 
     # Interpolate SR at Latour time points
@@ -175,8 +219,6 @@ for i, fname in enumerate(rec_files):
     rms = np.sqrt(np.mean((sr_interp[valid] - data_Latour[valid, 1]) ** 2))
     wrms[i] = rms
     print(f"{fname}, onset {t0:.2f}s, RMS error vs Latour: {rms:.4f}")
-    results["fault_receiver_fname"].append(fname)
-    results["slip_rate_rms"].append(wrms[i])
 
 top10_indices = np.argsort(wrms)[:10]
 
@@ -192,6 +234,8 @@ for k, modeli in enumerate(top10_indices[::-1]):
             continue
 
         t0 = frd.Time[id0]
+        if not args.align_using_slip_rate_threshold:
+            t0 = get_max_cross_correlation(frd, data_Latour)
 
         match = re.search(r"dyn[/_-]([^_]+)_", fname)
         if match:
@@ -216,8 +260,12 @@ plt.legend(
     frameon=False, fontsize=8, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 1.05)
 )
 # plt.legend(frameon=False, fontsize=8, ncol=2)
-plt.xlim([0, 4])
-plt.xlabel(f"Time (s) since {t0:.1f}s post-rupture onset")
+if args.align_using_slip_rate_threshold:
+    plt.xlim([0, 4])
+else:
+    plt.xlim([-2, 4])
+# plt.xlabel(f"Time (s) since {t0:.1f}s post-rupture onset")
+plt.xlabel(f"Time (s) after signal alignment")
 # plt.xlabel(f"Time (seconds). time = 0 is {t0:.1f}s after rupture onset in the dynamic rupture model)")
 plt.ylabel("Slip rate along strike (m/s)")
 
