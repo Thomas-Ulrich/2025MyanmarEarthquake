@@ -9,6 +9,7 @@ import matplotlib
 import re
 from scipy.interpolate import interp1d
 import pandas as pd
+from scipy.integrate import cumtrapz
 
 
 class FaultReceiverData:
@@ -135,7 +136,7 @@ parser.add_argument(
     action="store_true",
     help="align signals based slip rate threhold and not cross-correlation",
 )
-
+parser.add_argument("--fault_slip", action="store_true", help="plot fault slip")
 
 args = parser.parse_args()
 SR_threshold = 0.15
@@ -248,7 +249,12 @@ for k, modeli in enumerate(top10_indices[::-1]):
         sr_shifted = frd.SRs[id0:]
 
         # Plot preferred model
-        plt.plot(time_shifted, sr_shifted, label=f"{sim_id}, {float(wrms[modeli]):.2f}")
+        (line,) = plt.plot(
+            time_shifted, sr_shifted, label=f"{sim_id}, {float(wrms[modeli]):.2f}"
+        )
+        if args.fault_slip:
+            slip = cumtrapz(sr_shifted, time_shifted, initial=0)
+            ax.plot(time_shifted, slip, linestyle="--", color=line.get_color())
 
 
 dfr = pd.DataFrame(results)
@@ -268,6 +274,8 @@ else:
 plt.xlabel(f"Time (s) after signal alignment")
 # plt.xlabel(f"Time (seconds). time = 0 is {t0:.1f}s after rupture onset in the dynamic rupture model)")
 plt.ylabel("Slip rate along strike (m/s)")
+if args.fault_slip:
+    plt.ylabel("Slip or slip rate along strike (m/s)")
 
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
