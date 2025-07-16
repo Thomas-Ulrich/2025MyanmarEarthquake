@@ -138,6 +138,7 @@ parser.add_argument(
 )
 parser.add_argument("--fault_slip", action="store_true", help="plot fault slip")
 
+
 args = parser.parse_args()
 SR_threshold = 0.15
 
@@ -221,6 +222,8 @@ for i, fname in enumerate(rec_files):
     wrms[i] = rms
     print(f"{fname}, onset {t0:.2f}s, RMS error vs Latour: {rms:.4f}")
 
+print(results)
+
 top10_indices = np.argsort(wrms)[:10]
 
 print("10 best models:")
@@ -249,9 +252,11 @@ for k, modeli in enumerate(top10_indices[::-1]):
         sr_shifted = frd.SRs[id0:]
 
         # Plot preferred model
-        (line,) = plt.plot(
-            time_shifted, sr_shifted, label=f"{sim_id}, {float(wrms[modeli]):.2f}"
-        )
+        label = f"{sim_id}, {float(wrms[modeli]):.2f}"
+        label = "preferred model" if len(top10_indices) == 1 else label
+
+        # Plot preferred model
+        (line,) = plt.plot(time_shifted, sr_shifted, label=label)
         if args.fault_slip:
             slip = cumtrapz(sr_shifted, time_shifted, initial=0)
             ax.plot(time_shifted, slip, linestyle="--", color=line.get_color())
@@ -262,16 +267,24 @@ fn = "rms_slip_rate.csv"
 dfr.to_csv(fn, index=True, index_label="id")
 print(f"done writing {fn}")
 
-plt.legend(
-    frameon=False, fontsize=8, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 1.05)
-)
-# plt.legend(frameon=False, fontsize=8, ncol=2)
 if args.align_using_slip_rate_threshold:
     plt.xlim([0, 4])
 else:
     plt.xlim([-2, 4])
-# plt.xlabel(f"Time (s) since {t0:.1f}s post-rupture onset")
-plt.xlabel(f"Time (s) after signal alignment")
+
+if len(top10_indices) == 1:
+    plt.xlabel(f"Time (s) since {t0:.1f}s post-rupture onset")
+    plt.legend(frameon=False, ncol=1, loc="upper right")
+else:
+    plt.xlabel(f"Time (s) after signal alignment")
+    plt.legend(
+        frameon=False,
+        fontsize=8,
+        ncol=2,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.05),
+    )
+
 # plt.xlabel(f"Time (seconds). time = 0 is {t0:.1f}s after rupture onset in the dynamic rupture model)")
 plt.ylabel("Slip rate along strike (m/s)")
 if args.fault_slip:
