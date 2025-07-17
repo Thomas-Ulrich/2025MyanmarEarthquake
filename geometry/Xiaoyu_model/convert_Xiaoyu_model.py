@@ -6,6 +6,7 @@ from scipy.spatial import cKDTree
 import argparse
 import os
 
+
 def clean_delaunay(points, triangles):
     def triangle_area_3d(tri_pts):
         a, b, c = tri_pts[:, 0], tri_pts[:, 1], tri_pts[:, 2]
@@ -42,8 +43,9 @@ def clean_delaunay(points, triangles):
     tri_pts = points[triangles]
     areas = triangle_area_3d(tri_pts)
     AR = triangle_aspect_ratio(tri_pts)
-    triangles = triangles[(areas > 5e6) & (AR < 4)]
+    triangles = triangles[(areas > 0.01) & (AR < 4)]
     return triangles
+
 
 def read_vert_slip(folder):
     if folder != "model3simple":
@@ -76,7 +78,10 @@ def read_vert_slip(folder):
         from scipy.spatial import Delaunay
 
         points = slip[:, :3].copy()
-        points[:, 2] /= 1e3
+        # points[:, 2] /= 1e3
+        myproj = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=95.92 +lat_0=22.00"
+        transformer = Transformer.from_crs("epsg:4326", myproj, always_xy=True)
+        points[:, 0], points[:, 1] = transformer.transform(points[:, 0], points[:, 1])
         # print(points)
         pca = PCA(n_components=2)
         xyz = pca.fit_transform(points)
@@ -115,10 +120,9 @@ def is_cell_data(points, triangles, slip):
 def generate_grid(points, triangles, slip):
     myproj = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=95.92 +lat_0=22.00"
     transformer = Transformer.from_crs("epsg:4326", myproj, always_xy=True)
-    points[:, 0], points[:, 1] = transformer.transform(points[:, 0], points[:, 1])
-    points[:, 2] *= 1e3
-
-
+    if folder != "model3simple":
+        points[:, 0], points[:, 1] = transformer.transform(points[:, 0], points[:, 1])
+        points[:, 2] *= 1e3
 
     # Convert triangles to pyvista format: [3, pt0, pt1, pt2] per triangle
     cells = np.hstack([np.full((len(triangles), 1), 3), triangles]).astype(np.int32)
@@ -224,7 +228,6 @@ else:
 cell_data = is_cell_data(points, triangles, slip)
 
 grid = generate_grid(points, triangles, slip)
-
 """
 if cell_data:
     cells = grid.cells.reshape((grid.cells.size // 4, 4))[:, 1:]
