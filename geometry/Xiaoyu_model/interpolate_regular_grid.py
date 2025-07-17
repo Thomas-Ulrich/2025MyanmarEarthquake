@@ -3,6 +3,7 @@ import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 from asagiwriter import writeNetcdf
 import numpy as np
+from scipy.ndimage import gaussian_filter
 
 
 def project_to_yz_plane(mesh, x_fixed=0.0):
@@ -47,7 +48,9 @@ def extract_numpy_array(image_data, name):
 surface = pv.read("fault_slip.vtk")  # or any other vtk/obj/stl file
 # Project onto yz-plane at x = 0.0
 yz_surface = project_to_yz_plane(surface)
-y, z, grid = create_yz_probe_grid(yz_surface, spacing_y=4e3, spacing_z=2e3, x_fixed=0.0)
+y, z, grid = create_yz_probe_grid(
+    yz_surface, spacing_y=0.75e3, spacing_z=0.75e3, x_fixed=0.0
+)
 
 probed_output = probe(yz_surface, grid)
 out = {}
@@ -60,7 +63,7 @@ for var in ["strike_slip", "dip_slip"]:
 
 for var in ["rupture_onset", "effective_rise_time", "acc_time"]:
     out[var] = 0.0 * out["strike_slip"]
-out["rake_interp_low_slip"] = 0.0 * out["strike_slip"] + 180
+out["rake_interp_low_slip"] = 0.0 * out["strike_slip"] + np.pi
 
 
 prefix = "model"
@@ -72,6 +75,8 @@ variables = [
     "acc_time",
     "rake_interp_low_slip",
 ]
+for var in variables:
+    out[var] = gaussian_filter(out[var], sigma=1.5)
 
 for i, var in enumerate(variables):
     writeNetcdf(
