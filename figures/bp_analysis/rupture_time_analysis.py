@@ -29,7 +29,7 @@ def get_fault_trace():
     ids_external_nodes = np.unique(unique_edges.flatten())
 
     nodes = mesh.vertices[ids_external_nodes, :]
-    nodes = nodes[nodes[:, 2] == 0]
+    nodes = nodes[nodes[:, 2] > 0]
     nodes = nodes[nodes[:, 1].argsort()]
 
     # Compute strike vector to filter boundaries of near-vertical edges

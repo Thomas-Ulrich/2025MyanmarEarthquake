@@ -49,7 +49,7 @@ def add_seissol_data(ax, label, fn, plotted_lines):
 plotted_lines = add_seissol_data(
     ax,
     "dynamic rupture model",
-    "../seissol_outputs/dyn_0017_coh0.25_0.0_B1.0_C0.2_mud0.3_mus0.6_sn15.0-energy.csv",
+    "../seissol_outputs/dyn_0080_coh0.25_0.0_B1.1_C0.3_mud0.25_mus0.6_sn10.0-energy.csv",
     plotted_lines,
 )
 
@@ -71,6 +71,17 @@ line = ax.plot(
     df["x"], df[" y"] / scale, label=f"Scardec (Mw={Mw:.2f})", color="darkorange"
 )
 plotted_lines.append(line[0])
+
+df = pd.read_csv("../data/Melgar.csv")
+Mw = computeMw("Scardec", df["x"], df[" y"])
+line = ax.plot(
+    df["x"],
+    df[" y"] / scale,
+    label=f"Melgar et al. (2025) (Mw={Mw:.2f})",
+    color="darkblue",
+)
+plotted_lines.append(line[0])
+
 
 df = pd.read_csv("../data/STF_inoue.csv")
 df[" y"] = df[" y"].astype(float)
@@ -95,10 +106,11 @@ ax.spines["right"].set_visible(False)
 ax.get_xaxis().tick_bottom()
 ax.get_yaxis().tick_left()
 
-ax.set_ylabel(r"moment rate (e19 $\times$ Nm/s)")
-ax.set_xlabel("time (s)")
+ax.set_ylabel(r"Moment rate (e19 $\times$ Nm/s)")
+ax.set_xlabel("Time (s)")
 labels = [l.get_label() for l in plotted_lines]
-ax.legend(plotted_lines, labels, frameon=False)
+kargs = {"bbox_to_anchor": (1.0, 1.28)}
+ax.legend(plotted_lines, labels, frameon=False, **kargs)
 
 # plt.legend(frameon=False)
 fn = "moment_rate.svg"
