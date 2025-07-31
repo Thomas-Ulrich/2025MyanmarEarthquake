@@ -1,6 +1,5 @@
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
 import numpy as np
 from cmcrameri import cm
 import pandas as pd
@@ -12,7 +11,7 @@ matplotlib.rc("xtick", labelsize=ps)
 matplotlib.rc("ytick", labelsize=ps)
 
 
-def plot_xy_panel(fig, ax, df, dim_vars, vz, cmap):
+def plot_xy_panel(fig, ax, df, dim_vars, vz, cmap, contour_lines=None):
     """Generate a 2D plot using variables from 'dim_vars' dict."""
 
     # Filter by z-value
@@ -30,9 +29,9 @@ def plot_xy_panel(fig, ax, df, dim_vars, vz, cmap):
     # Plot color mesh
     # im = ax.pcolormesh(X, Y, values, cmap=cmap, shading='auto')
     im = ax.contourf(X, Y, values, cmap=cmap, levels=20)
-    if dim_vars["v"]["col"] == "duration":
+    if contour_lines:
         contour_lines = ax.contour(
-            X, Y, values, levels=[85, 90, 95, 100], colors="k", linestyles="-"
+            X, Y, values, levels=contour_lines, colors="k", linestyles="-"
         )
         ax.clabel(contour_lines, inline=True, fontsize=10, fmt="%1.0f")
     ax.set_xlim(pivot.columns.min(), pivot.columns.max())
@@ -58,42 +57,69 @@ def plot_xy_panel(fig, ax, df, dim_vars, vz, cmap):
     else:
         ax.set_yticklabels([])
 
-    # Title and colorbar
-    cbar = fig.colorbar(im, ax=ax, label=dim_vars["v"]["label"])
+    fig.colorbar(im, ax=ax, label=dim_vars["v"]["label"])
 
 
 df = pd.read_pickle("compiled_results.pkl")
+
+gofa = pd.read_csv("Gc.csv", sep=",")
+gofa["sim_id"] = gofa["faultfn"].str.extract(r"dyn[/_-]([^_]+)_")[0].astype(int)
+gofa = gofa[["Gc", "sim_id"]]
+df = pd.merge(df, gofa, on="sim_id", how="left")
+
+
 print(df)
-fig, ax = plt.subplots(2, 2, figsize=(12, 8), dpi=80)
 
+for B in [0.8, 0.9, 1.0]:
+    # fig, ax = plt.subplots(2, 2, figsize=(12, 8), dpi=80)
+    fig, ax = plt.subplots(2, 2, figsize=(0.7 * 12, 0.7 * 8), dpi=80)
 
-dim_vars = {
-    "x": {"col": "sigman", "label": r"$\sigma_n$"},
-    "y": {"col": "C", "label": "C"},
-    "z": {"col": "B", "label": "B"},
-}
+    dim_vars = {
+        "x": {"col": "sigman", "label": r"$\sigma_n$"},
+        "y": {"col": "C", "label": "C"},
+        "z": {"col": "B", "label": "B"},
+    }
 
-B = 0.9
-for i in range(2):
-    for j in range(2):
-        dim_vars["x"]["label"] = None if i == 0 else r"$\sigma_n$ (MPa)"
-        dim_vars["y"]["label"] = None if j > 0 else "C"
-        if (i, j) == (0, 0):
-            dim_vars["v"] = {"col": "duration", "label": "Duration (s)"}
-        elif (i, j) == (0, 1):
-            dim_vars["v"] = {"col": "Mw", "label": "Mw"}
-        elif (i, j) == (1, 0):
-            dim_vars["v"] = {
-                "col": "area_max_R",
-                "label": "fault area with R=0.97 (km²)",
-            }
-        elif (i, j) == (1, 1):
-            dim_vars["v"] = {"col": "combined_gof", "label": "combined GOF"}
-        plot_xy_panel(fig, ax[i, j], df, dim_vars, vz=B, cmap=cm.cmaps["acton_r"])
+    for i in range(2):
+        for j in range(2):
+            dim_vars["x"]["label"] = None if i == 0 else r"$\sigma_n$ (MPa)"
+            dim_vars["y"]["label"] = None if j > 0 else "C"
+            contour_lines = None
+            if (i, j) == (0, 0):
+                dim_vars["v"] = {"col": "duration", "label": "duration (s)"}
+                contour_lines = [85, 90, 95, 100]
+            elif (i, j) == (0, 1):
+                dim_vars["v"] = {"col": "Mw", "label": "Mw"}
+            elif (i, j) == (1, 0):
+                dim_vars["v"] = {
+                    "col": "area_max_R",
+                    "label": "fault area with R=0.97 (km²)",
+                }
+                dim_vars["v"] = {
+                    "col": "Gc",
+                    "label": "fracture energy (MJ/m²)",
+                }
+                contour_lines = [0.5, 1, 1.5]
 
-        ax[i, j].scatter([13], [0.2], c="g", marker="x")
+            elif (i, j) == (1, 1):
+                dim_vars["v"] = {"col": "combined_gof", "label": "combined GOF"}
+            plot_xy_panel(
+                fig,
+                ax[i, j],
+                df,
+                dim_vars,
+                vz=B,
+                cmap=cm.cmaps["acton_r"],
+                contour_lines=contour_lines,
+            )
+            if B == 0.9:
+                ax[i, j].scatter([13], [0.2], c="g", marker="x")
 
-
-ax[0, 0].set_title(f"B={B}")
-
-plt.show()
+    ax[0, 0].set_title(f"a. B={B}", fontweight="bold")
+    ax[0, 1].set_title("b.", fontweight="bold")
+    ax[1, 0].set_title("c.", fontweight="bold")
+    ax[1, 1].set_title("d.", fontweight="bold")
+    ext = "pdf" if B != 0.9 else "svg"
+    fn = f"figure_4panelsB{B}.{ext}"
+    plt.savefig(fn)
+    print(f"done writing {fn}")
