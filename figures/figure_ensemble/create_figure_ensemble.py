@@ -30,6 +30,11 @@ def plot_xy_panel(fig, ax, df, dim_vars, vz, cmap):
     # Plot color mesh
     # im = ax.pcolormesh(X, Y, values, cmap=cmap, shading='auto')
     im = ax.contourf(X, Y, values, cmap=cmap, levels=20)
+    if dim_vars["v"]["col"] == "duration":
+        contour_lines = ax.contour(
+            X, Y, values, levels=[85, 90, 95, 100], colors="k", linestyles="-"
+        )
+        ax.clabel(contour_lines, inline=True, fontsize=10, fmt="%1.0f")
     ax.set_xlim(pivot.columns.min(), pivot.columns.max())
     ax.set_ylim(pivot.index.min(), pivot.index.max())
 
@@ -68,7 +73,7 @@ dim_vars = {
     "z": {"col": "B", "label": "B"},
 }
 
-
+B = 0.9
 for i in range(2):
     for j in range(2):
         dim_vars["x"]["label"] = None if i == 0 else r"$\sigma_n$ (MPa)"
@@ -84,11 +89,11 @@ for i in range(2):
             }
         elif (i, j) == (1, 1):
             dim_vars["v"] = {"col": "combined_gof", "label": "combined GOF"}
-        plot_xy_panel(fig, ax[i, j], df, dim_vars, vz=0.9, cmap=cm.cmaps["acton_r"])
+        plot_xy_panel(fig, ax[i, j], df, dim_vars, vz=B, cmap=cm.cmaps["acton_r"])
 
         ax[i, j].scatter([13], [0.2], c="g", marker="x")
 
 
-ax[0, 0].set_title("B=0.9")
+ax[0, 0].set_title(f"B={B}")
 
 plt.show()
