@@ -15,61 +15,75 @@ matplotlib.rc("ytick", labelsize=ps)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Show a profile of shear stress")
     parser.add_argument("fault_yaml_files", nargs="+", help="List of EASI YAML files")
+    parser.add_argument(
+        "--depths",
+        nargs="+",
+        help="depth at which profile is made",
+        default=[4e3],
+        type=float,
+    )
     args = parser.parse_args()
 
     fault_yaml_files = args.fault_yaml_files
+    depths = args.depths
+
     n_files = len(fault_yaml_files)
+    n_depths = len(depths)
+    fig, axes = plt.subplots(
+        n_files, n_depths, figsize=(7 * n_depths, 3 * n_files), sharex=True
+    )
+    # Ensure axes is always a 2D array: shape (n_files, n_depths)
+    if n_files == 1 and n_depths == 1:
+        axes = np.array([[axes]])
+    elif n_files == 1:
+        axes = axes[np.newaxis, :]
+    elif n_depths == 1:
+        axes = axes[:, np.newaxis]
 
-    n = 550 * 4  # Number of samples
+    for i, fault_yaml_file in enumerate(fault_yaml_files):
+        for j, depth in enumerate(depths):
+            ax = axes[i, j]
 
-    # Generate coordinates for evaluation
-    cell_centers = np.zeros((n, 3))
-    cell_centers[:, 1] = np.linspace(-450e3, 100e3, n)  # y from 0 to 200 km
-    y = cell_centers[:, 1] / 1e3
-    cell_centers[:, 2] = -4e3  # depth = 6 km
+            n = 550 * 4
+            cell_centers = np.zeros((n, 3))
+            cell_centers[:, 1] = np.linspace(-450e3, 100e3, n)
+            y = cell_centers[:, 1] / 1e3  # km
+            cell_centers[:, 2] = -depth
+            regions = np.full((n,), 3)
 
-    regions = np.full((n,), 3)
+            out = easi.evaluate_model(
+                cell_centers,
+                regions,
+                ["mu_s", "mu_d", "cohesion", "d_c", "T_s", "T_d", "T_n"],
+                fault_yaml_file,
+            )
 
-    # Create subplots: one row, multiple columns
-    fig, axes = plt.subplots(n_files, 1, figsize=(10, 4 * n_files), sharex=True)
+            out["tau"] = np.sqrt(out["T_s"] ** 2 + out["T_d"] ** 2) / 1e6
+            out["pos_pn0"] = np.maximum(0, -out["T_n"]) / 1e6
 
-    if n_files == 1:
-        axes = [axes]  # Ensure axes is iterable if only one subplot
+            ax.plot(y, out["mu_d"] * out["pos_pn0"], label="Dynamic strength")
+            ax.plot(y, out["tau"], label="Shear stress")
+            ax.plot(y, out["mu_s"] * out["pos_pn0"], label="Static strength")
 
-    for ax, fault_yaml_file in zip(axes, fault_yaml_files):
-        print(ax, fault_yaml_file)
-        # Evaluate model
-        out = easi.evaluate_model(
-            cell_centers,
-            regions,
-            ["mu_s", "mu_d", "cohesion", "d_c", "T_s", "T_d", "T_n"],
-            fault_yaml_file,
-        )
+            # Axis titles
+            fault_name = os.path.splitext(os.path.basename(fault_yaml_file))[0]
+            sigma_n = float(fault_name.split("sn")[-1])
+            depth_km = depth / 1e3
+            ax.set_title(rf"$\sigma_n$ = {sigma_n} MPa, depth = {depth_km:.1f} km")
 
-        # Compute stress quantities
-        out["tau"] = np.sqrt(out["T_s"] ** 2 + out["T_d"] ** 2) / 1e6  # MPa
-        out["pos_pn0"] = np.maximum(0, -out["T_n"]) / 1e6  # MPa
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.tick_params(direction="out")
 
-        # Plot
-        ax.plot(y, out["mu_d"] * out["pos_pn0"], label="Dynamic strength")
-        ax.plot(y, out["tau"], label="Shear stress")
-        ax.plot(y, out["mu_s"] * out["pos_pn0"], label="Static strength")
+            if j == 0:
+                ax.set_ylabel("Stress (MPa)")
+            if i == n_files - 1:
+                ax.set_xlabel("Distance along fault (km)")
 
-        # Format plot
-        name = os.path.splitext(os.path.basename(fault_yaml_file))[0]
-        sigma_n = name.split("sn")[-1]
-        ax.set_title(rf"$\sigma_n$ = {sigma_n} MPa")
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-        ax.tick_params(direction="out")
-        ax.set_ylabel("Fault stress and strength (MPa)")
-
-    axes[-1].set_xlabel("Distance (km)")
-
-    # Shared y-label
+        # Shared y-label
 
     # Common legend
-    handles, labels = axes[0].get_legend_handles_labels()
+    handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=3)
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space for legend
