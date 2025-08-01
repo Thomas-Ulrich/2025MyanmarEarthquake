@@ -10,7 +10,7 @@ rm output/SR*.png
 
 light_quake_visualizer $file --variable SR --cmap magma_r0 --color_range "0 2" \
     --zoom 3.5 --window 2500 600 --annotate_time "k 0.15 0.6" --time "i:" \
-    --scalar_bar "0.93 0.35 160" --view "$view" --font_size 20 --output SR%d
+    --scalar_bar "0.93 0.35 160" --view "$view" --font_size 20 --output SR%d --vtk_meshes "CCTV.vtk red 1;NPW.vtk blue 1"
 
 ffmpeg -y -framerate 10 -i output/SR_%d.png \
        -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -f mp4 -vcodec libx264 \

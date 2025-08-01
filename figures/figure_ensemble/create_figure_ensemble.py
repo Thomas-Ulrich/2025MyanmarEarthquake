@@ -113,7 +113,7 @@ for B in [0.8, 0.9, 1.0]:
                 contour_lines=contour_lines,
             )
             if B == 0.9:
-                ax[i, j].scatter([13], [0.2], c="g", marker="x")
+                ax[i, j].scatter([13], [0.15], c="g", marker="x")
 
     ax[0, 0].set_title(f"a. B={B}", fontweight="bold")
     ax[0, 1].set_title("b.", fontweight="bold")

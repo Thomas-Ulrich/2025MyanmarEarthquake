@@ -4,6 +4,7 @@ from vtk.util.numpy_support import vtk_to_numpy
 from asagiwriter import writeNetcdf
 import numpy as np
 from scipy.ndimage import gaussian_filter
+from vtk.util.numpy_support import vtk_to_numpy, numpy_to_vtk
 
 
 def project_to_yz_plane(mesh, x_fixed=0.0):
@@ -29,12 +30,65 @@ def create_yz_probe_grid(surface, spacing_y, spacing_z, x_fixed=0.0):
 
 
 def probe(surface, grid):
+    cell_locator = vtk.vtkCellLocator()
+    cell_locator.SetDataSet(surface)
+    cell_locator.BuildLocator()
+
+
     probe_filter = vtk.vtkProbeFilter()
     probe_filter.SetSourceData(surface)
     probe_filter.SetInputData(grid)
+    #probe_filter.SetSnapToCellWithClosestPoint(True)
+    probe_filter.SetCellLocatorPrototype(cell_locator)
+    probe_filter.SetValidPointMaskArrayName("ValidPointMask")
     probe_filter.Update()
-    return probe_filter.GetOutput()
 
+    output = probe_filter.GetOutput()
+    point_data = output.GetPointData()
+
+    # Check the valid mask
+    valid_mask_vtk = point_data.GetArray("ValidPointMask")
+    mask = vtk_to_numpy(valid_mask_vtk)#.tolist()
+    npoints = mask.shape[0]
+    ninvalid = len(np.where(mask==0)[0])
+    if ninvalid:
+        print(f"{ninvalid} points could not be evaluated out of {npoints}")
+        print("will use nearest neigbor for them")
+
+    # Build a locator on the surface for nearest neighbor search
+    locator = vtk.vtkPointLocator()
+    locator.SetDataSet(surface)
+    locator.BuildLocator()
+
+    # Get surface point data as numpy arrays
+    surface_point_data = {}
+    for i in range(surface.GetPointData().GetNumberOfArrays()):
+        arr = surface.GetPointData().GetArray(i)
+        surface_point_data[arr.GetName()] = vtk_to_numpy(arr)
+
+    # Get coordinates of grid points
+    num_points = grid.GetNumberOfPoints()
+    points = np.array([grid.GetPoint(i) for i in range(num_points)])
+
+    # Fix invalid points using nearest neighbor values
+    for i in range(output.GetPointData().GetNumberOfArrays()):
+        arr = output.GetPointData().GetArray(i)
+        name = arr.GetName()
+        data = vtk_to_numpy(arr)
+
+        if mask is not None and (mask == 0).any():
+            for j in range(len(mask)):
+                if mask[j] == 0:
+                    pid = locator.FindClosestPoint(points[j])
+                    data[j] = surface_point_data[name][pid]
+
+        # Replace the data in the output
+        output.GetPointData().RemoveArray(name)
+        new_vtk_array = numpy_to_vtk(data, deep=True)
+        new_vtk_array.SetName(name)
+        output.GetPointData().AddArray(new_vtk_array)
+
+    return output
 
 def extract_numpy_array(image_data, name):
     arr = image_data.GetPointData().GetArray(name)
@@ -53,6 +107,7 @@ y, z, grid = create_yz_probe_grid(
 )
 
 probed_output = probe(yz_surface, grid)
+#probed_output = probe_with_nearest_neighbor(surface, grid)
 out = {}
 out["strike_slip"] = extract_numpy_array(probed_output, "sls")
 out["dip_slip"] = extract_numpy_array(probed_output, "sld")
@@ -76,7 +131,7 @@ variables = [
     "rake_interp_low_slip",
 ]
 for var in variables:
-    out[var] = gaussian_filter(out[var], sigma=1.5)
+    out[var] = gaussian_filter(out[var], sigma=0.5)
 
 for i, var in enumerate(variables):
     writeNetcdf(
