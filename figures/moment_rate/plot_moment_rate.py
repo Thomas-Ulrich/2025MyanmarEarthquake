@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
 import matplotlib
+import glob
+import os
+import argparse
 
 
 def computeMw(label, time, moment_rate):
@@ -19,7 +22,7 @@ def read_usgs_moment_rate(fname):
     return mr_ref
 
 
-fig = plt.figure(figsize=(10, 7.5 * 5.0 / 16), dpi=80)
+fig = plt.figure(figsize=(9.5, 3), dpi=80)
 ax = fig.add_subplot(111)
 
 ps = 12
@@ -32,55 +35,96 @@ matplotlib.rcParams["lines.linewidth"] = 0.5
 plotted_lines = []
 
 
-def add_seissol_data(ax, label, fn, plotted_lines, color):
+def add_seissol_data(ax, label, fn, plotted_lines, color, linewidth):
     df = pd.read_csv(fn)
     df = df.pivot_table(index="time", columns="variable", values="measurement")
     df["seismic_moment_rate"] = np.gradient(df["seismic_moment"], df.index[1])
     Mw = computeMw(label, df.index.values, df["seismic_moment_rate"])
+    if label is not None:
+        label = f"{label} (Mw={Mw:.2f}"
+
     line = ax.plot(
         df.index.values,
         df["seismic_moment_rate"] / scale,
-        label=f"{label} (Mw={Mw:.2f})",
+        label=label,
         color=color,
+        linewidth=linewidth,
     )
     plotted_lines.append(line[0])
     return plotted_lines
 
+
+parser = argparse.ArgumentParser(
+    description="compare synthetic moment rate releases with observations"
+)
+parser.add_argument("ensemble_dir", help="path to seissol output file")
+
+parser.add_argument(
+    "--best_model", type=str, help='Pattern for best model ((e.g. "dyn_0073")'
+)
+
+args = parser.parse_args()
+# Plot ensemble
+
+for fn in glob.glob(f"{args.ensemble_dir}/*energy.csv"):
+    label = os.path.basename(fn).replace("-energy.csv", "")
+    plotted_lines = add_seissol_data(
+        ax, None, fn, plotted_lines, color="#edeeeeff", linewidth=1.2
+    )
+
+
+# Plot best model
+model_file = glob.glob(f"{args.ensemble_dir}/*{args.best_model}*-energy.csv")
+
 plotted_lines = add_seissol_data(
     ax,
-    "dynamic rupture model",
-    "../seissol_outputs/dyn_0073_coh0.25_0.0_B0.9_C0.15_mud0.15_mus0.35_sn13.0-energy.csv",
+    "dynamic rupture model ",
+    model_file[0],
     plotted_lines,
     "blue",
+    linewidth=1.5,
 )
 
 
-usgs_mr = read_usgs_moment_rate("../data/STF_usgs.txt")
+usgs_mr = read_usgs_moment_rate("MomentRateObs/STF_usgs.txt")
 Mw = computeMw("usgs", usgs_mr[:, 0], usgs_mr[:, 1])
 
+
+# Plot Observation
+# USGS
 line = ax.plot(
     usgs_mr[:, 0],
     usgs_mr[:, 1] / scale,
     label=f"usgs (Mw={Mw:.2f})",
     color="k",
+    linestyle=":",
+    linewidth=1.2,
 )
 plotted_lines.append(line[0])
 
-
-df = pd.read_csv("../data/scardec.csv")
-Mw = computeMw("Scardec", df["x"], df[" y"])
-line = ax.plot(
-    df["x"], df[" y"] / scale, label=f"Scardec (Mw={Mw:.2f})", color="darkorange"
-)
-plotted_lines.append(line[0])
-
-df = pd.read_csv("../data/Melgar.csv")
+# Scardec
+df = pd.read_csv("MomentRateObs/scardec.csv")
 Mw = computeMw("Scardec", df["x"], df[" y"])
 line = ax.plot(
     df["x"],
     df[" y"] / scale,
+    label=f"Scardec (Mw={Mw:.2f})",
+    color="#f3a966ff",
+    linestyle="-.",
+    linewidth=1.2,
+)
+plotted_lines.append(line[0])
+
+# Melgar
+df = pd.read_csv("MomentRateObs/Melgar.csv")
+Mw = computeMw("Merlgar", df["x"], df[" y"])
+line = ax.plot(
+    df["x"],
+    df[" y"] / scale,
     label=f"Melgar et al. (2025) (Mw={Mw:.2f})",
-    color="magenta",
+    color="#c448c2ff",
+    linestyle="--",
+    linewidth=1.2,
 )
 plotted_lines.append(line[0])
 
@@ -119,13 +163,13 @@ ax.get_yaxis().tick_left()
 ax.set_ylabel(r"Moment rate (e19 $\times$ Nm/s)")
 ax.set_xlabel("Time (s)")
 labels = [l.get_label() for l in plotted_lines]
-#kargs = {"bbox_to_anchor": (1.0, 1.28)}
+# kargs = {"bbox_to_anchor": (1.0, 1.28)}
 kargs = {"bbox_to_anchor": (1.0, 1.1)}
 ax.legend(plotted_lines, labels, frameon=False, **kargs)
 
 # plt.legend(frameon=False)
-fn = "moment_rate.svg"
+fn = "figures/moment_rate.svg"
 plt.savefig(fn)
 print(f"done writing {fn}")
 
-plt.show()
+# plt.show()
