@@ -9,7 +9,10 @@ import matplotlib
 import re
 from scipy.interpolate import interp1d
 import pandas as pd
+import os
 from scipy.integrate import cumtrapz
+
+# from scipy.integrate import cumulative_trapezoid
 
 
 class FaultReceiverData:
@@ -126,6 +129,9 @@ def get_max_cross_correlation(frd, data_Latour):
 
 parser = argparse.ArgumentParser(description="compare with Latour slip rate")
 parser.add_argument("fault_receiver", help="seissol fault output file")
+
+parser.add_argument("--best_model", type=str, help="name of the best model to plot")
+
 parser.add_argument(
     "--plot_all",
     action="store_true",
@@ -170,16 +176,6 @@ if not args.align_using_slip_rate_threshold:
     data_Latour = np.vstack((extra_data, data_Latour))
 
 
-plt.plot(
-    data_Latour[:, 0],
-    data_Latour[:, 1],
-    label="Latour et al. (2025)",
-    marker="o",
-    markersize=4,
-    linestyle="None",
-    color="black",
-)
-
 results = {}
 wrms = np.full(len(rec_files), np.inf, dtype=float)
 results["fault_receiver_fname"] = rec_files
@@ -208,7 +204,11 @@ for i, fname in enumerate(rec_files):
             sim_id = int(match.group(1))
         else:
             sim_id = None  # or raise an error
-        plt.plot(time_shifted, sr_shifted, label=f"{sim_id}")
+        plt.plot(time_shifted, sr_shifted, color="#edeeeeff")
+
+        if args.best_model in fname:
+            time_shifted_best = time_shifted
+            sr_shifted_best = sr_shifted
 
     # Interpolate SR at Latour time points
     interp_func = interp1d(
@@ -285,6 +285,20 @@ else:
         bbox_to_anchor=(0.5, 1.05),
     )
 
+
+plt.plot(
+    data_Latour[:, 0],
+    data_Latour[:, 1],
+    marker="o",
+    markersize=4,
+    linestyle="None",
+    color="black",
+)
+
+if args.plot_all:
+    plt.plot(time_shifted_best, sr_shifted_best, color="blue")
+
+
 # plt.xlabel(f"Time (seconds). time = 0 is {t0:.1f}s after rupture onset in the dynamic rupture model)")
 plt.ylabel("Slip rate along strike (m/s)")
 if args.fault_slip:
@@ -297,7 +311,8 @@ ax.get_xaxis().tick_bottom()
 ax.get_yaxis().tick_left()
 
 
-fn = "CCTV_comparison.svg"
+os.makedirs("figures", exist_ok=True)
+fn = "figures/CCTV_comparison.svg"
 plt.savefig(fn, bbox_inches="tight")
 print(f"done writing {fn}")
 full_path = os.path.abspath(fn)
