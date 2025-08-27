@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2024–2025 Thomas Ulrich, Mathilde Marchandon
+
 import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
@@ -33,6 +36,7 @@ matplotlib.rc("xtick", labelsize=ps)
 matplotlib.rc("ytick", labelsize=ps)
 matplotlib.rcParams["lines.linewidth"] = 0.5
 plotted_lines = []
+os.makedirs("figures", exist_ok=True)
 
 
 def add_seissol_data(ax, label, fn, plotted_lines, color, linewidth):
@@ -41,7 +45,7 @@ def add_seissol_data(ax, label, fn, plotted_lines, color, linewidth):
     df["seismic_moment_rate"] = np.gradient(df["seismic_moment"], df.index[1])
     Mw = computeMw(label, df.index.values, df["seismic_moment_rate"])
     if label is not None:
-        label = f"{label} (Mw={Mw:.2f}"
+        label = f"{label} (Mw={Mw:.2f})"
 
     line = ax.plot(
         df.index.values,
@@ -60,22 +64,29 @@ parser = argparse.ArgumentParser(
 parser.add_argument("ensemble_dir", help="path to seissol output file")
 
 parser.add_argument(
+    "--plot_ensemble",
+    action="store_true",
+    help="plot ensemble as grey lines",
+)
+
+parser.add_argument(
     "--best_model", type=str, help='Pattern for best model ((e.g. "dyn_0073")'
 )
 
 args = parser.parse_args()
-# Plot ensemble
 
-for fn in glob.glob(f"{args.ensemble_dir}/*energy.csv"):
-    label = os.path.basename(fn).replace("-energy.csv", "")
-    plotted_lines = add_seissol_data(
-        ax, None, fn, plotted_lines, color="#edeeeeff", linewidth=1.2
-    )
+if args.plot_ensemble:
+    for fn in glob.glob(f"{args.ensemble_dir}/*energy.csv"):
+        label = os.path.basename(fn).replace("-energy.csv", "")
+        plotted_lines = add_seissol_data(
+            ax, None, fn, plotted_lines, color="#edeeeeff", linewidth=1.2
+        )
 
 
 # Plot best model
 model_file = glob.glob(f"{args.ensemble_dir}/*{args.best_model}*-energy.csv")
-
+print(model_file)
+assert len(model_file) == 1
 plotted_lines = add_seissol_data(
     ax,
     "dynamic rupture model ",
@@ -95,7 +106,7 @@ Mw = computeMw("usgs", usgs_mr[:, 0], usgs_mr[:, 1])
 line = ax.plot(
     usgs_mr[:, 0],
     usgs_mr[:, 1] / scale,
-    label=f"usgs (Mw={Mw:.2f})",
+    label=f"USGS (Mw={Mw:.2f})",
     color="k",
     linestyle=":",
     linewidth=1.2,
@@ -104,11 +115,11 @@ plotted_lines.append(line[0])
 
 # Scardec
 df = pd.read_csv("MomentRateObs/scardec.csv")
-Mw = computeMw("Scardec", df["x"], df[" y"])
+Mw = computeMw("SCARDEC", df["x"], df[" y"])
 line = ax.plot(
     df["x"],
     df[" y"] / scale,
-    label=f"Scardec (Mw={Mw:.2f})",
+    label=f"SCARDEC (Mw={Mw:.2f})",
     color="#f3a966ff",
     linestyle="-.",
     linewidth=1.2,
@@ -117,7 +128,7 @@ plotted_lines.append(line[0])
 
 # Melgar
 df = pd.read_csv("MomentRateObs/Melgar.csv")
-Mw = computeMw("Merlgar", df["x"], df[" y"])
+Mw = computeMw("Melgar", df["x"], df[" y"])
 line = ax.plot(
     df["x"],
     df[" y"] / scale,
