@@ -300,4 +300,6 @@ ax.get_yaxis().tick_left()
 fn = "CCTV_comparison.svg"
 plt.savefig(fn, bbox_inches="tight")
 print(f"done writing {fn}")
+full_path = os.path.abspath(fn)
+print(f"full path: {full_path}")
 # plt.show()
