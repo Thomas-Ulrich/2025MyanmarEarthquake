@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from cmcrameri import cm
 import pandas as pd
+import copy
 
 ps = 12
 matplotlib.rcParams.update({"font.size": ps})
@@ -48,7 +49,12 @@ def plot_xy_panel(fig, ax, df, dim_vars, vz, cmap, contour_lines=None):
     ax.set_yticks(pivot.index.values)
     if dim_vars["x"]["label"]:
         ax.set_xlabel(dim_vars["x"]["label"])
-        ax.set_xticklabels([f"{x:g}" for x in pivot.columns.values])
+        vals = pivot.columns.values
+        if len(vals) > 7:
+            xticks = [f"{x:g}" if i % 2 == 0 else "" for i, x in enumerate(vals)]
+            ax.set_xticklabels(xticks)
+        else:
+            ax.set_xticklabels([f"{x:g}" for x in vals])
     else:
         ax.set_xticklabels([])
 
@@ -67,24 +73,33 @@ gofa["sim_id"] = gofa["faultfn"].str.extract(r"dyn[/_-]([^_]+)_")[0].astype(int)
 gofa = gofa[["Gc", "sim_id"]]
 df = pd.merge(df, gofa, on="sim_id", how="left")
 
+if "sigman" in df.columns:
+    dim_var_x = {"col": "sigman", "label": r"$\sigma_n$"}
+elif "R" in df.columns:
+    dim_var_x = {"col": "R", "label": "R"}
+else:
+    raise ValueError("structure of df not understood")
 
 print(df)
 
-for B in [0.8, 0.9, 1.0]:
+for B in df["B"].unique():
     # fig, ax = plt.subplots(2, 2, figsize=(12, 8), dpi=80)
     nlines, ncol = 3, 3
     fig, ax = plt.subplots(nlines, ncol, figsize=(1.0 * 12, 1.0 * 8), dpi=80)
 
-    dim_vars = {
-        "x": {"col": "sigman", "label": r"$\sigma_n$"},
+    dim_vars_0 = {
+        "x": dim_var_x,
         "y": {"col": "C", "label": "C"},
         "z": {"col": "B", "label": "B"},
     }
 
     for i in range(nlines):
         for j in range(ncol):
-            dim_vars["x"]["label"] = None if i < nlines - 1 else r"$\sigma_n$ (MPa)"
-            dim_vars["y"]["label"] = None if j > 0 else "C"
+            dim_vars = copy.deepcopy(dim_vars_0)
+            dim_vars["x"]["label"] = (
+                None if i < nlines - 1 else dim_vars_0["x"]["label"]
+            )
+            dim_vars["y"]["label"] = None if j > 0 else dim_vars_0["y"]["label"]
             contour_lines = None
             config_map = {
                 (0, 0): {"col": "gof_offsets", "label": "Fault-offsets (GOF)"},
@@ -110,8 +125,8 @@ for B in [0.8, 0.9, 1.0]:
                     cmap=cm.cmaps["lipari_r"],
                     contour_lines=contour_lines,
                 )
-                if B == 0.9:
-                    ax[i, j].scatter([13], [0.15], c="g", marker="x")
+                if B == 0.95:
+                    ax[i, j].scatter([0.95], [0.15], c="g", marker="x")
             else:
                 ax[i, j].set_visible(False)
 
