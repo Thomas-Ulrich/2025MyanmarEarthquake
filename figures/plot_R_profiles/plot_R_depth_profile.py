@@ -5,11 +5,17 @@ import easi  # Assumes 'easi' is properly installed and the YAML file is valid
 import os
 import matplotlib
 
-ps = 12
-matplotlib.rcParams.update({"font.size": ps})
-plt.rcParams["font.family"] = "sans"
-matplotlib.rc("xtick", labelsize=ps)
-matplotlib.rc("ytick", labelsize=ps)
+ps = 10
+matplotlib.rcParams.update(
+    {
+        "font.size": ps,  # base font size
+        "axes.titlesize": ps,  # title font size
+        "axes.labelsize": ps,  # x/y label size
+        "xtick.labelsize": ps,
+        "ytick.labelsize": ps,
+        "font.family": "sans",
+    }
+)
 
 
 if __name__ == "__main__":
@@ -67,9 +73,14 @@ if __name__ == "__main__":
 
             # Axis titles
             fault_name = os.path.splitext(os.path.basename(fault_yaml_file))[0]
-            sigma_n = float(fault_name.split("sn")[-1])
+            if "sn" in fault_name:
+                sigma_n = float(fault_name.split("sn")[-1])
+                first_param = rf"$\sigma_n$ = {sigma_n} MPa"
+            else:
+                R = float(fault_name.split("R")[-1])
+                first_param = f"R = {R} "
             depth_km = depth / 1e3
-            ax.set_title(rf"$\sigma_n$ = {sigma_n} MPa, depth = {depth_km:.1f} km")
+            ax.set_title(first_param + f"depth = {depth_km:.1f} km")
 
             ax.spines["top"].set_visible(False)
             ax.spines["right"].set_visible(False)
@@ -84,7 +95,7 @@ if __name__ == "__main__":
 
     # Common legend
     handles, labels = axes[0, 0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", ncol=3)
+    fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False)
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])  # Leave space for legend
     fn = "R_profile_row.pdf"
