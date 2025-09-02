@@ -9,6 +9,18 @@ import glob
 import os
 import argparse
 
+ps = 12
+matplotlib.rcParams.update(
+    {
+        "font.size": ps,  # base font size
+        "axes.titlesize": ps,  # title font size
+        "axes.labelsize": ps,  # x/y label size
+        "xtick.labelsize": ps,
+        "ytick.labelsize": ps,
+        "font.family": "sans",
+        "lines.linewidth": 0.5
+    }
+)
 
 def computeMw(label, time, moment_rate):
     M0 = np.trapz(moment_rate[:], x=time[:])
@@ -28,13 +40,8 @@ def read_usgs_moment_rate(fname):
 fig = plt.figure(figsize=(9.5, 3), dpi=80)
 ax = fig.add_subplot(111)
 
-ps = 12
 scale = 1e19
-matplotlib.rcParams.update({"font.size": ps})
-plt.rcParams["font.family"] = "sans"
-matplotlib.rc("xtick", labelsize=ps)
-matplotlib.rc("ytick", labelsize=ps)
-matplotlib.rcParams["lines.linewidth"] = 0.5
+
 plotted_lines = []
 os.makedirs("figures", exist_ok=True)
 
@@ -162,7 +169,7 @@ plotted_lines.append(line[0])
 """
 
 ax.set_ylim(bottom=0)
-ax.set_xlim(right=125)
+ax.set_xlim(right=150)
 ax.set_xlim(left=0)
 
 ax.spines["top"].set_visible(False)
@@ -180,7 +187,7 @@ ax.legend(plotted_lines, labels, frameon=False, **kargs)
 
 # plt.legend(frameon=False)
 fn = "figures/moment_rate.svg"
-plt.savefig(fn)
+plt.savefig(fn, bbox_inches="tight")
 print(f"done writing {fn}")
 
 # plt.show()
