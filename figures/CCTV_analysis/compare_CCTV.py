@@ -295,6 +295,14 @@ plt.plot(
     color="black",
 )
 
+df = pd.read_csv("Kearse_and_Kaneko.csv")
+plt.plot(
+    df["time(s)"] - 13.8,
+    df["strike_slip_velocity(m/s)"],
+    label="Kearse and Kaneko (2025)",
+    color="darkgrey",
+)
+
 if args.plot_all:
     plt.plot(time_shifted_best, sr_shifted_best, color="blue")
 
