@@ -138,6 +138,11 @@ parser.add_argument(
     help="Plot all slip rate functions (default: plot only the 10 best)",
 )
 parser.add_argument(
+    "--strike_vs_dip",
+    action="store_true",
+    help="plot strike vs dip figure",
+)
+parser.add_argument(
     "--align_using_slip_rate_threshold",
     action="store_true",
     help="align signals based slip rate threhold and not cross-correlation",
@@ -320,9 +325,63 @@ ax.get_yaxis().tick_left()
 
 
 os.makedirs("figures", exist_ok=True)
-fn = "figures/CCTV_comparison.svg"
-plt.savefig(fn, bbox_inches="tight")
-print(f"done writing {fn}")
-full_path = os.path.abspath(fn)
-print(f"full path: {full_path}")
-# plt.show()
+if not args.strike_vs_dip:
+    fn = "figures/CCTV_comparison.svg"
+    plt.savefig(fn, bbox_inches="tight")
+    print(f"done writing {fn}")
+    full_path = os.path.abspath(fn)
+    print(f"full path: {full_path}")
+
+else:
+    # strike slip vs dip slip figure:
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6), dpi=100, sharex=True, sharey=True)
+    ax = axes[0]
+
+    print("10 best models:")
+    for k, modeli in enumerate(top10_indices[::-1]):
+        fname = rec_files[modeli]
+        print(10 - k, fname, wrms[modeli])
+        if not args.plot_all:
+            frd = FaultReceiverData(fname, switchNormal)
+
+            ax.scatter(
+                frd.Sls,
+                frd.Sld,
+                c=frd.SRs,  # color by SR
+                cmap="viridis",  # colormap
+                vmin=0,
+                vmax=3,  # fix color scale 0–3
+                s=30,  # marker size (adjust as needed)
+                label=f"{sim_id}, {float(wrms[modeli]):.2f}",
+            )
+
+    ax.xlabel(f"Strike slip (m)")
+    ax.ylabel("Dip slip (m)")
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    ax.get_xaxis().tick_bottom()
+    ax.get_yaxis().tick_left()
+
+    ax = axes[1]
+    ax.ylim([-0.6, 0.6])
+    ax.colorbar(label="SR (m/s)")
+    df = pd.read_csv("Kearse_and_Kaneko.csv")
+
+    plt.scatter(
+        df["strike_slip(m)"],
+        df["dip_slip(m)"],
+        c=df["strike_slip_velocity(m/s)"],  # color by SR
+        cmap="viridis",  # colormap
+        vmin=0,
+        vmax=3,  # fix color scale 0–3
+        s=30,  # marker size (adjust as needed)
+        label="Kearse and Kaneko (2025)",
+    )
+
+    fn = "CCTV_comparison_strike_vs_dip_slip.svg"
+    plt.savefig(fn, bbox_inches="tight")
+    print(f"done writing {fn}")
+    full_path = os.path.abspath(fn)
+    print(f"full path: {full_path}")
