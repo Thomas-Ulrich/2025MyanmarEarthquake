@@ -134,13 +134,13 @@ def generate_grid(points, triangles, slip):
     if cell_data:
         # Add slip as cell data
         grid.cell_data["sls"] = slip[:, 0]
-        grid.cell_data["sld"] = slip[:, 1]
+        grid.cell_data["sld"] = -slip[:, 1]
     else:
         # Load slip file: lon, lat, depth (km), sls, sld
         slip_lonlat = slip[:, :2]
         slip_depth = slip[:, 2]
         sls = slip[:, 3]
-        sld = slip[:, 4]
+        sld = -slip[:, 4]
 
         # Project slip points
         slip_x, slip_y = transformer.transform(slip_lonlat[:, 0], slip_lonlat[:, 1])
