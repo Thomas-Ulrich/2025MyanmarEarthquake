@@ -1,0 +1,1 @@
+python ../2025MyanmarEarthquake/figures/plot_R_profiles/plot_R_depth_profile.py yaml_files/fault_0089_coh0.25_1.0_B0.95_C0.15_R0.5.yaml yaml_files/fault_0084_coh0.25_1.0_B0.95_C0.15_R0.75.yaml yaml_files/fault_0080_coh0.25_1.0_B0.95_C0.15_R0.95.yaml --depth 4e3 7e3 9e3

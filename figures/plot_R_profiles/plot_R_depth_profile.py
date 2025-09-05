@@ -5,7 +5,7 @@ import easi  # Assumes 'easi' is properly installed and the YAML file is valid
 import os
 import matplotlib
 
-ps = 10
+ps = 20
 matplotlib.rcParams.update(
     {
         "font.size": ps,  # base font size
