@@ -305,7 +305,7 @@ plt.plot(
     df["time(s)"] - 13.8,
     df["strike_slip_velocity(m/s)"],
     label="Kearse and Kaneko (2025)",
-    color="darkgrey",
+    color="orange",
 )
 
 if args.plot_all:
@@ -333,8 +333,14 @@ if not args.strike_vs_dip:
     print(f"full path: {full_path}")
 
 else:
+    ps = 12
+    matplotlib.rcParams.update({"font.size": ps})
+    plt.rcParams["font.family"] = "sans"
+    matplotlib.rc("xtick", labelsize=ps)
+    matplotlib.rc("ytick", labelsize=ps)
+
     # strike slip vs dip slip figure:
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6), dpi=100, sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(6, 2.5), dpi=100, sharex=True, sharey=True)
     ax = axes[0]
 
     print("10 best models:")
@@ -343,8 +349,7 @@ else:
         print(10 - k, fname, wrms[modeli])
         if not args.plot_all:
             frd = FaultReceiverData(fname, switchNormal)
-
-            ax.scatter(
+            sc = ax.scatter(
                 frd.Sls,
                 frd.Sld,
                 c=frd.SRs,  # color by SR
@@ -355,18 +360,11 @@ else:
                 label=f"{sim_id}, {float(wrms[modeli]):.2f}",
             )
 
-    ax.xlabel(f"Strike slip (m)")
-    ax.ylabel("Dip slip (m)")
-
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-
-    ax.get_xaxis().tick_bottom()
-    ax.get_yaxis().tick_left()
+    ax.set_xlabel(f"Strike slip (m)")
+    ax.set_ylabel("Dip slip (m)")
 
     ax = axes[1]
-    ax.ylim([-0.6, 0.6])
-    ax.colorbar(label="SR (m/s)")
+    plt.ylim([-0.6, 0.6])
     df = pd.read_csv("Kearse_and_Kaneko.csv")
 
     plt.scatter(
@@ -379,6 +377,15 @@ else:
         s=30,  # marker size (adjust as needed)
         label="Kearse and Kaneko (2025)",
     )
+
+    for ax in axes:
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.get_xaxis().tick_bottom()
+        ax.get_yaxis().tick_left()
+
+    cbar = fig.colorbar(sc, ax=axes, orientation="vertical", fraction=0.05, pad=0.05)
+    cbar.set_label("Slip rate (m/s)")
 
     fn = "CCTV_comparison_strike_vs_dip_slip.svg"
     plt.savefig(fn, bbox_inches="tight")
