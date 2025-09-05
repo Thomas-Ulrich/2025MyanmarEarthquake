@@ -340,7 +340,7 @@ else:
     matplotlib.rc("ytick", labelsize=ps)
 
     # strike slip vs dip slip figure:
-    fig, axes = plt.subplots(1, 2, figsize=(6, 2.5), dpi=100, sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(5, 2.5), dpi=100, sharex=True, sharey=True)
     ax = axes[0]
 
     print("10 best models:")
@@ -351,7 +351,7 @@ else:
             frd = FaultReceiverData(fname, switchNormal)
             sc = ax.scatter(
                 frd.Sls,
-                frd.Sld,
+                -frd.Sld,
                 c=frd.SRs,  # color by SR
                 cmap="viridis",  # colormap
                 vmin=0,
@@ -384,8 +384,8 @@ else:
         ax.get_xaxis().tick_bottom()
         ax.get_yaxis().tick_left()
 
-    cbar = fig.colorbar(sc, ax=axes, orientation="vertical", fraction=0.05, pad=0.05)
-    cbar.set_label("Slip rate (m/s)")
+    # cbar = fig.colorbar(sc, ax=axes, orientation="vertical", fraction=0.05, pad=0.05)
+    # cbar.set_label("Slip rate (m/s)")
 
     fn = "CCTV_comparison_strike_vs_dip_slip.svg"
     plt.savefig(fn, bbox_inches="tight")
