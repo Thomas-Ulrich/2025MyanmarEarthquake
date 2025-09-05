@@ -305,7 +305,7 @@ plt.plot(
     df["time(s)"] - 13.8,
     df["strike_slip_velocity(m/s)"],
     label="Kearse and Kaneko (2025)",
-    color="darkgrey",
+    color="orange",
 )
 
 if args.plot_all:

@@ -133,7 +133,7 @@ for B in df["B"].unique():
     ax[0, 1].set_title("b.", fontweight="bold")
     ax[1, 0].set_title("c.", fontweight="bold")
     ax[1, 1].set_title("d.", fontweight="bold")
-    ext = "pdf" if B != 0.9 else "svg"
+    ext = "pdf" if B != 0.95 else "svg"
     fn = f"figure_4panelsB{B}.{ext}"
     plt.savefig(fn)
     print(f"done writing {fn}")
