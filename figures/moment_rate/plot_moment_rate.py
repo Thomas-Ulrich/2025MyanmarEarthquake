@@ -6,26 +6,15 @@ import numpy as np
 import matplotlib.pylab as plt
 import matplotlib
 import glob
-import os
 import argparse
+import pickle
+from matplotlib.colors import Normalize
 
-ps = 12
-matplotlib.rcParams.update(
-    {
-        "font.size": ps,  # base font size
-        "axes.titlesize": ps,  # title font size
-        "axes.labelsize": ps,  # x/y label size
-        "xtick.labelsize": ps,
-        "ytick.labelsize": ps,
-        "font.family": "sans",
-        "lines.linewidth": 0.5
-    }
-)
 
 def computeMw(label, time, moment_rate):
-    M0 = np.trapz(moment_rate[:], x=time[:])
+    M0 = np.trapezoid(moment_rate[:], x=time[:])
     Mw = 2.0 * np.log10(M0) / 3.0 - 6.07
-    print(f"{label} moment magnitude: {Mw} (M0 = {M0:.4e})")
+    # print(f"{label} moment magnitude: {Mw} (M0 = {M0:.4e})")
     return Mw
 
 
@@ -37,16 +26,27 @@ def read_usgs_moment_rate(fname):
     return mr_ref
 
 
-fig = plt.figure(figsize=(9.5, 3), dpi=80)
-ax = fig.add_subplot(111)
+def alphas_from_gof(
+    gof: np.ndarray,
+    alpha_min: float = 0.05,
+    alpha_max: float = 0.90,
+    robust_percentiles: tuple[float, float] = (5, 95),
+):
+    """
+    Mappe gof (plus grand = meilleur) -> alpha (plus opaque = plus grand alpha)
+    en normalisant de façon robuste via percentiles.
+    """
+    gof = np.asarray(gof, dtype=float)
+    m = np.isfinite(gof)
 
-scale = 1e19
+    lo, hi = np.nanpercentile(gof[m], robust_percentiles)
+    x = (gof - lo) / (hi - lo + 1e-12)
+    x = np.clip(x, 0.0, 1.0)
 
-plotted_lines = []
-os.makedirs("figures", exist_ok=True)
+    return alpha_min + x * (alpha_max - alpha_min)
 
 
-def add_seissol_data(ax, label, fn, plotted_lines, color, linewidth):
+def add_seissol_data(ax, label, fn, plotted_lines, color, linewidth, alpha=1):
     df = pd.read_csv(fn)
     df = df.pivot_table(index="time", columns="variable", values="measurement")
     df["seismic_moment_rate"] = np.gradient(df["seismic_moment"], df.index[1])
@@ -59,57 +59,78 @@ def add_seissol_data(ax, label, fn, plotted_lines, color, linewidth):
         df["seismic_moment_rate"] / scale,
         label=label,
         color=color,
+        alpha=alpha,
         linewidth=linewidth,
     )
     plotted_lines.append(line[0])
     return plotted_lines
 
 
+fig = plt.figure(figsize=(9.5, 3), dpi=80)
+ax = fig.add_subplot(111)
+
+ps = 12
+scale = 1e19
+matplotlib.rcParams.update({"font.size": ps})
+plt.rcParams["font.family"] = "sans"
+matplotlib.rc("xtick", labelsize=ps)
+matplotlib.rc("ytick", labelsize=ps)
+matplotlib.rcParams["lines.linewidth"] = 0.5
+plotted_lines = []
+
+
 parser = argparse.ArgumentParser(
     description="compare synthetic moment rate releases with observations"
 )
 parser.add_argument("ensemble_dir", help="path to seissol output file")
-
-parser.add_argument(
-    "--plot_ensemble",
-    action="store_true",
-    help="plot ensemble as grey lines",
-)
-
+parser.add_argument("results", help="path to compiled_results.pkl")
 parser.add_argument(
     "--best_model", type=str, help='Pattern for best model ((e.g. "dyn_0073")'
 )
 
 args = parser.parse_args()
 
-if args.plot_ensemble:
-    for fn in glob.glob(f"{args.ensemble_dir}/*energy.csv"):
-        label = os.path.basename(fn).replace("-energy.csv", "")
-        plotted_lines = add_seissol_data(
-            ax, None, fn, plotted_lines, color="#edeeeeff", linewidth=1.2
-        )
+with open(args.results, "rb") as f:
+    df = pickle.load(f)
 
 
-# Plot best model
-model_file = glob.glob(f"{args.ensemble_dir}/*{args.best_model}*-energy.csv")
-print(model_file)
-assert len(model_file) == 1
-plotted_lines = add_seissol_data(
-    ax,
-    "dynamic rupture model ",
-    model_file[0],
-    plotted_lines,
-    "blue",
-    linewidth=1.5,
+# Calcul des alpha depuis gof_MRF
+df["alpha_mrf"] = alphas_from_gof(
+    df["gof_MRF"].to_numpy(), alpha_min=0.05, alpha_max=0.5
 )
+print(df[["faultfn", "gof_MRF", "alpha_mrf"]].head(10))
+
+
+lo, hi = np.percentile(df["gof_MRF"].to_numpy(), [5, 95])
+
+
+cmap = plt.cm.Blues  # _r : bon (petit RMS) -> couleurs "fortes" (à toi de choisir)
+norm = Normalize(vmin=lo, vmax=1.0)
+
+
+for _, row in df.sort_values("gof_MRF").iterrows():
+    name = row["faultfn"]
+    alpha = row["alpha_mrf"]
+    gof = row["gof_MRF"]
+
+    plotted_lines = add_seissol_data(
+        ax,
+        None,
+        f"{args.ensemble_dir}/{name}-energy.csv",
+        plotted_lines,
+        color=cmap(norm(gof)),
+        linewidth=1.2,
+        alpha=0.15,
+    )
 
 
 usgs_mr = read_usgs_moment_rate("MomentRateObs/STF_usgs.txt")
 Mw = computeMw("usgs", usgs_mr[:, 0], usgs_mr[:, 1])
 
-
+plotted_lines = []
 # Plot Observation
 # USGS
+
 line = ax.plot(
     usgs_mr[:, 0],
     usgs_mr[:, 1] / scale,
@@ -120,56 +141,48 @@ line = ax.plot(
 )
 plotted_lines.append(line[0])
 
-# Scardec
+# Scardec "#f3a966ff"
 df = pd.read_csv("MomentRateObs/scardec.csv")
-Mw = computeMw("SCARDEC", df["x"], df[" y"])
+Mw = computeMw("Scardec", df["x"], df[" y"])
+
 line = ax.plot(
     df["x"],
     df[" y"] / scale,
     label=f"SCARDEC (Mw={Mw:.2f})",
-    color="#f3a966ff",
+    color="k",
     linestyle="-.",
     linewidth=1.2,
 )
 plotted_lines.append(line[0])
 
-# Melgar
+# Melgar #c448c2ff"
 df = pd.read_csv("MomentRateObs/Melgar.csv")
-Mw = computeMw("Melgar", df["x"], df[" y"])
+Mw = computeMw("Merlgar", df["x"], df[" y"])
+
 line = ax.plot(
     df["x"],
     df[" y"] / scale,
     label=f"Melgar et al. (2025) (Mw={Mw:.2f})",
-    color="#c448c2ff",
+    color="k",
     linestyle="--",
     linewidth=1.2,
 )
 plotted_lines.append(line[0])
 
-"""
+# Plot best model
+model_file = glob.glob(f"{args.ensemble_dir}/*{args.best_model}*-energy.csv")
+
 plotted_lines = add_seissol_data(
     ax,
-    "triggered asperity",
-    #"../seissol_outputs/dyn_0014_coh0.25_0.0_B1.0_C0.2_mud0.25_mus0.6_sn12.0-energy.csv",
-    "../seissol_outputs/dyn_0006_coh0.25_0.0_B1.0_C0.1_mud0.2_mus0.6_sn10.0-energy.csv",
+    "dynamic rupture model",
+    model_file[0],
     plotted_lines,
-    color = "darkgreen",
+    "#0834acff",  # "#083470ff",
+    linewidth=1.7,
 )
-df = pd.read_csv("../data/STF_inoue.csv")
-df[" y"] = df[" y"].astype(float)
-Mw = computeMw("Inoue et al. (2025)", df["x"], df[" y"])
-
-line = ax.plot(
-    df["x"],
-    df[" y"] / scale,
-    label=f"Inoue et al. (2025) (Mw={Mw:.2f})",
-    color="lightgreen",
-)
-plotted_lines.append(line[0])
-"""
 
 ax.set_ylim(bottom=0)
-ax.set_xlim(right=150)
+ax.set_xlim(right=125)
 ax.set_xlim(left=0)
 
 ax.spines["top"].set_visible(False)
@@ -180,14 +193,14 @@ ax.get_yaxis().tick_left()
 
 ax.set_ylabel(r"Moment rate (e19 $\times$ Nm/s)")
 ax.set_xlabel("Time (s)")
-labels = [l.get_label() for l in plotted_lines]
+labels = [lab.get_label() for lab in plotted_lines]
 # kargs = {"bbox_to_anchor": (1.0, 1.28)}
 kargs = {"bbox_to_anchor": (1.0, 1.1)}
 ax.legend(plotted_lines, labels, frameon=False, **kargs)
 
 # plt.legend(frameon=False)
 fn = "figures/moment_rate.svg"
-plt.savefig(fn, bbox_inches="tight")
+plt.savefig(fn)
 print(f"done writing {fn}")
 
 # plt.show()
