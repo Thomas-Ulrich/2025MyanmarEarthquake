@@ -6,13 +6,32 @@ import sys
 import argparse
 import matplotlib.pyplot as plt
 import matplotlib
+import pickle
 import re
 from scipy.interpolate import interp1d
 import pandas as pd
 import os
-from scipy.integrate import cumtrapz
+from matplotlib.colors import Normalize
 
-# from scipy.integrate import cumulative_trapezoid
+
+def alphas_from_gof(
+    gof: np.ndarray,
+    alpha_min: float = 0.05,
+    alpha_max: float = 0.90,
+    robust_percentiles: tuple[float, float] = (5, 95),
+):
+    """
+    Mappe gof (plus grand = meilleur) -> alpha (plus opaque = plus grand alpha)
+    en normalisant de façon robuste via percentiles.
+    """
+    gof = np.asarray(gof, dtype=float)
+    m = np.isfinite(gof)
+
+    lo, hi = np.nanpercentile(gof[m], robust_percentiles)
+    x = (gof - lo) / (hi - lo + 1e-12)
+    x = np.clip(x, 0.0, 1.0)
+
+    return alpha_min + x * (alpha_max - alpha_min)
 
 
 class FaultReceiverData:
@@ -155,6 +174,14 @@ SR_threshold = 0.15
 
 switchNormal = False
 
+folder_path = os.path.dirname(args.fault_receiver)
+with open(f"{folder_path}/../compiled_results.pkl", "rb") as f:
+    df = pickle.load(f)
+lo, hi = np.percentile(df["gof_slip_rate"].to_numpy(), [5, 95])
+cmap = plt.cm.Blues
+norm = Normalize(vmin=lo, vmax=1.0)
+
+
 rec_files = sorted(glob.glob(f"{args.fault_receiver}*-faultreceiver*"))
 rec_files = [fn for fn in rec_files if "dyn-kinmod" not in fn and "fl33" not in fn]
 
@@ -187,7 +214,11 @@ results["fault_receiver_fname"] = rec_files
 results["slip_rate_rms"] = wrms
 
 
-for i, fname in enumerate(rec_files):
+for i, row in df.sort_values("gof_slip_rate").iterrows():
+    files = f"{args.fault_receiver}/{row['faultfn']}-faultreceiver*.dat"
+    fname = glob.glob(files)[0]
+    gof = row["gof_slip_rate"]
+
     frd = FaultReceiverData(fname, switchNormal)
 
     id0 = get_rupture_time(frd.SRs)
@@ -209,7 +240,7 @@ for i, fname in enumerate(rec_files):
             sim_id = int(match.group(1))
         else:
             sim_id = None  # or raise an error
-        plt.plot(time_shifted, sr_shifted, color="#edeeeeff")
+        plt.plot(time_shifted, sr_shifted, color=cmap(norm(gof)), alpha=0.2)
 
         if args.best_model in fname:
             time_shifted_best = time_shifted
@@ -295,18 +326,33 @@ plt.plot(
     data_Latour[:, 0],
     data_Latour[:, 1],
     marker="o",
-    markersize=4,
-    linestyle="None",
+    markersize=1.5,
+    linestyle="-",
+    linewidth="0.5",
     color="black",
 )
 
-df = pd.read_csv("Kearse_and_Kaneko.csv")
+
+dfkearse = pd.read_csv("Kearse_and_Kaneko.csv")
+"""
 plt.plot(
-    df["time(s)"] - 13.8,
+    df["time(s)"] - 13.83,
     df["strike_slip_velocity(m/s)"],
     label="Kearse and Kaneko (2025)",
     color="orange",
 )
+"""
+plt.plot(
+    dfkearse["time(s)"] - 13.8,
+    dfkearse["strike_slip_velocity(m/s)"],
+    marker=(5, 2),
+    markersize=3,
+    markeredgewidth=0.5,
+    linestyle="-",
+    linewidth=0.5,
+    color="black",
+)
+
 
 if args.plot_all:
     plt.plot(time_shifted_best, sr_shifted_best, color="blue")
