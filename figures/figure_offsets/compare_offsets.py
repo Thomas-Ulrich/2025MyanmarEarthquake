@@ -14,6 +14,7 @@ import os
 import re
 import argparse
 from matplotlib.colors import Normalize
+from tqdm import tqdm
 import pickle
 
 
@@ -201,7 +202,7 @@ def remove_spikes(data, threshold=5.0):
     return data
 
 
-def compute_rms_offset(folder, results_file, offset_data, bestmodel, threshold_z):
+def compute_rms_offset(folder, offset_data, bestmodel, threshold_z):
     # Read optical offset
     dfo = pd.read_csv(offset_data, sep=",")
     dfo = dfo.sort_values(by="lat", ascending=False)
@@ -221,7 +222,9 @@ def compute_rms_offset(folder, results_file, offset_data, bestmodel, threshold_z
         os.makedirs("figures")
 
     # List all models in DR output folder
-    with open(results_file, "rb") as f:
+    folder_path = os.path.dirname(folder)
+
+    with open(f"{folder_path}/../compiled_results.pkl", "rb") as f:
         df = pickle.load(f)
 
     # 1) Trier par gof_offsets (du pire au meilleur, par ex.)
@@ -257,12 +260,10 @@ def compute_rms_offset(folder, results_file, offset_data, bestmodel, threshold_z
 
     fig, ax = init_all_offsets_figure(acc_dist, dfo)
     # Loop on each model in the output filder
-    for _, row in df_final.iterrows():
-
+    for _, row in tqdm(df_final.iterrows(), total=df_final.shape[0]):
         base_name = row["faultfn"]
         gof = row["gof_offsets"]
-        fault = f"{folder}/{base_name}_compacted-fault.xdmf"
-        print(fault)
+        fault = f"{folder_path}/{base_name}_compacted-fault.xdmf"
 
         if bestmodel in base_name:
             color = "#0834acff"
@@ -353,7 +354,6 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument("output_folder", help="folder where the models lie")
-parser.add_argument("results_file", help="path to compiled_results.pkl")
 parser.add_argument("offset_data", help="path to offset data")
 parser.add_argument("bestmodel", help='Pattern for best model (e.g. "dyn_0080")')
 parser.add_argument(
@@ -366,7 +366,6 @@ parser.add_argument(
 args = parser.parse_args()
 compute_rms_offset(
     args.output_folder,
-    args.results_file,
     args.offset_data,
     args.bestmodel,
     args.threshold_z,

@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-import numpy as np
+import argparse
 import datetime
 import glob
-import sys
-import argparse
-import matplotlib.pyplot as plt
-import matplotlib
+import os
 import pickle
 import re
-from scipy.interpolate import interp1d
+import sys
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-import os
 from matplotlib.colors import Normalize
+from scipy.interpolate import interp1d
 
 
 def alphas_from_gof(
@@ -175,6 +176,8 @@ SR_threshold = 0.15
 switchNormal = False
 
 folder_path = os.path.dirname(args.fault_receiver)
+basename = os.path.basename(args.fault_receiver)
+
 with open(f"{folder_path}/../compiled_results.pkl", "rb") as f:
     df = pickle.load(f)
 lo, hi = np.percentile(df["gof_slip_rate"].to_numpy(), [5, 95])
@@ -215,7 +218,9 @@ results["slip_rate_rms"] = wrms
 
 
 for i, row in df.sort_values("gof_slip_rate").iterrows():
-    files = f"{args.fault_receiver}/{row['faultfn']}-faultreceiver*.dat"
+    if not row["faultfn"].startswith(basename):
+        continue
+    files = f"{folder_path}/{row['faultfn']}-faultreceiver*.dat"
     fname = glob.glob(files)[0]
     gof = row["gof_slip_rate"]
 

@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2024–2025 Thomas Ulrich, Mathilde Marchandon
 
-import pandas as pd
-import numpy as np
-import matplotlib.pylab as plt
-import matplotlib
-import glob
 import argparse
+import glob
+import os
 import pickle
+
+import matplotlib
+import matplotlib.pylab as plt
+import numpy as np
+import pandas as pd
 from matplotlib.colors import Normalize
 
 
@@ -83,14 +85,20 @@ parser = argparse.ArgumentParser(
     description="compare synthetic moment rate releases with observations"
 )
 parser.add_argument("ensemble_dir", help="path to seissol output file")
-parser.add_argument("results", help="path to compiled_results.pkl")
 parser.add_argument(
     "--best_model", type=str, help='Pattern for best model ((e.g. "dyn_0073")'
 )
 
 args = parser.parse_args()
 
-with open(args.results, "rb") as f:
+
+folder_path = os.path.dirname(args.ensemble_dir)
+fn = (
+    f"{folder_path}/../compiled_results.pkl"
+    if folder_path != ""
+    else "compiled_results.pkl"
+)
+with open(fn, "rb") as f:
     df = pickle.load(f)
 
 
