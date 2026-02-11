@@ -339,17 +339,11 @@ plt.plot(
 
 
 dfkearse = pd.read_csv("Kearse_and_Kaneko.csv")
-"""
-plt.plot(
-    df["time(s)"] - 13.83,
-    df["strike_slip_velocity(m/s)"],
-    label="Kearse and Kaneko (2025)",
-    color="orange",
-)
-"""
+
 plt.plot(
     dfkearse["time(s)"] - 13.8,
     dfkearse["strike_slip_velocity(m/s)"],
+    label="Kearse and Kaneko (2025)",
     marker=(5, 2),
     markersize=3,
     markeredgewidth=0.5,
