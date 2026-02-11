@@ -162,5 +162,4 @@ if __name__ == "__main__":
         out,
         {"0.0": 0},
         reduce_precision=True,
-        backend="raw",
     )
