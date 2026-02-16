@@ -4,6 +4,7 @@ set -xe
 best=0080
 python ../2025MyanmarEarthquake/figures/figure_offsets/compare_offsets.py extracted_output/dyn_0 offsets.csv $best
 #python ../rapid-earthquake-dynamics/dynworkflow/compare_offset.py extracted_output/dyn_0 --bestmodel $best Myanmar_sentinel2_offset_latlon_v2.csv
+#redyn metrics fault-offsets extracted_output/dyn_0 --bestmodel 0080 Myanmar_sentinel2_offset_latlon_v2.csv
 
 # moment rate
 ln -sf ../2025MyanmarEarthquake/figures/moment_rate/MomentRateObs/ .

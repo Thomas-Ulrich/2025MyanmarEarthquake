@@ -148,6 +148,6 @@ ax2.set_ylim([1e-8, 1])
 #plt.tight_layout()
 #plt.show()
 
-fn = "CCTV_analysis.svg"
+fn = "CCTV_strong_motion_analysis.pdf"
 plt.savefig(fn, bbox_inches="tight")
 print(f"done writing {fn}")

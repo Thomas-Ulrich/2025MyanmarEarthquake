@@ -18,7 +18,8 @@ fi
 
 file=$1
 fileSR=$2
-output_prefix=$3
+fileVrVs=$3
+output_prefix=$4
 
 zoom=3.2
 #view=normal-flip
@@ -37,7 +38,7 @@ mkdir output
 light_quake_visualizer $file        --variable ASl              --cmap davos_r0  --color_range "0 6.0"     --zoom $zoom --window $win_size --output ASl         --time $time --view $view --contour "$contour_args" --vtk_meshes "$vtk_meshes"
 light_quake_visualizer $file        --variable PSR              --cmap lipari_r0 --color_range "0 4.0"     --zoom $zoom --window $win_size --output PSR         --time $time --view $view --vtk_meshes "$vtk_meshes"
 light_quake_visualizer $file        --variable Vr_kms           --cmap lapaz_r0  --color_range "0 6"       --zoom $zoom --window $win_size --output Vr          --time $time --view $view --vtk_meshes "$vtk_meshes"
-light_quake_visualizer ../seissol_outputs/vr_over_vs.xdmf        --variable vr_over_vs  --cmap roma_r  --color_range "0.0 2"  --zoom $zoom --window $win_size --output Vr_over_vs          --time $time --view $view --vtk_meshes "$vtk_meshes"
+light_quake_visualizer $fileVrVs        --variable vr_over_vs  --cmap roma_r  --color_range "0.0 2"  --zoom $zoom --window $win_size --output Vr_over_vs          --time $time --view $view --vtk_meshes "$vtk_meshes"
 light_quake_visualizer $file        --variable shear_stress_MPa           --cmap lapaz_r0  --color_range "0 9"       --zoom $zoom --window $win_size --output T_s          --time $time --view $view --vtk_meshes "$vtk_meshes"
 
 # Slip rate
