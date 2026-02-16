@@ -210,11 +210,7 @@ if not args.align_using_slip_rate_threshold:
     extra_data = np.column_stack((time_before, SR_before))
     data_Latour = np.vstack((extra_data, data_Latour))
 
-
-results = {}
-wrms = np.full(len(rec_files), np.inf, dtype=float)
-results["fault_receiver_fname"] = rec_files
-results["slip_rate_rms"] = wrms
+wrms_dict = {}
 
 
 for i, row in df.sort_values("gof_slip_rate").iterrows():
@@ -260,9 +256,22 @@ for i, row in df.sort_values("gof_slip_rate").iterrows():
     # Compute RMS error, ignoring NaNs
     valid = ~np.isnan(sr_interp)
     rms = np.sqrt(np.mean((sr_interp[valid] - data_Latour[valid, 1]) ** 2))
-    wrms[i] = rms
+    wrms_dict[fname] = rms  # Store using fname as key
     print(f"{fname}, onset {t0:.2f}s, RMS error vs Latour: {rms:.4f}")
 
+
+# 3. Create a results list aligned with your actual rec_files list
+# This ensures 'results' and 'wrms' have the same length and order
+final_wrms = []
+final_files = []
+
+for fn in rec_files:
+    if fn in wrms_dict:
+        final_files.append(fn)
+        final_wrms.append(wrms_dict[fn])
+
+wrms = np.array(final_wrms)
+results = {"fault_receiver_fname": final_files, "slip_rate_rms": wrms}
 print(results)
 
 top10_indices = np.argsort(wrms)[:10]
