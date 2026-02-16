@@ -140,8 +140,8 @@ def plot_individual_offset_figure(df, acc_dist, slip_at_trace, fname):
         label="Predicted offset",
     )
 
-    ax.text(-79, 6.5, "South", fontweight="medium")
-    ax.text(431, 6.5, "North", fontweight="medium")
+    ax.text(-79, 6.5, "North", fontweight="medium")
+    ax.text(431, 6.5, "South", fontweight="medium")
 
     plt.savefig(fname, dpi=200, bbox_inches="tight")
     print(f"done writing {fname}")
