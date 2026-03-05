@@ -33,7 +33,7 @@ contour_args="file_index=0 var=RT contour=black,4,0,max,5"
 cp ../Figures_3_4/*.vtk .
 mkdir output
 light_quake_visualizer $file        --variable ASl              --cmap acton_r  --color_range "0 6.0"     --zoom $zoom --window $win_size --output ASl         --time $time --view $view --vtk_meshes "CCTV.vtk red 1;NPW.vtk blue 1"
-light_quake_visualizer ../../geometry/fault_slip_m10.vtk        --variable ASl              --cmap acton_r  --color_range "0 6.0"     --zoom $zoom --window $win_size --output ASlref         --time $time --view normal  --vtk_meshes "CCTV.vtk red 1;NPW.vtk blue 1"
+light_quake_visualizer ../../geometry/fault_slip_m11.vtk        --variable ASl              --cmap acton_r  --color_range "0 6.0"     --zoom $zoom --window $win_size --output ASlref         --time $time --view normal  --vtk_meshes "CCTV.vtk red 1;NPW.vtk blue 1"
 
 image_combiner --inputs output/ASlref.png output/ASl.png \
                --rel $rel 0.5 \
