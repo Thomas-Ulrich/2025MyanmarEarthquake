@@ -174,8 +174,8 @@ def init_all_offsets_figure(acc_dist, dfo):
         zorder=2,
     )
 
-    ax.text(-79, 6.5, "South", fontweight="medium")
-    ax.text(400, 6.5, "North", fontweight="medium")
+    ax.text(-79, 6.5, "North", fontweight="medium")
+    ax.text(400, 6.5, "South", fontweight="medium")
     return fig, ax
 
 

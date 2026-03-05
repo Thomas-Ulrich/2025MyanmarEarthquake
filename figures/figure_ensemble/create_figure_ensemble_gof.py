@@ -105,10 +105,10 @@ for B in df["B"].unique():
                 (0, 0): {"col": "gof_offsets", "label": "Fault-offsets (GOF)"},
                 (0, 1): {"col": "gof_slip_rate", "label": "Slip-rate at CCTV (GOF)"},
                 (0, 2): {"col": "gof_slip", "label": "Fault-slip distribution (GOF)"},
-                (1, 0): {"col": "gof_tel_wf", "label": "Body waveforms (GOF)"},
+                (1, 0): {"col": "gof_body_wf", "label": "Body waveforms (GOF)"},
                 (1, 1): {"col": "gof_reg", "label": "NS displacement at NPW (GOF)"},
                 (1, 2): {"col": "gof_MRF", "label": "Moment-rate function (GOF)"},
-                (2, 0): {"col": "gof_sw", "label": "Surface waveforms (GOF)"},
+                (2, 0): {"col": "gof_surf_wf", "label": "Surface waveforms (GOF)"},
             }
             if (i, j) in config_map:
                 dim_vars["v"] = config_map[(i, j)]
