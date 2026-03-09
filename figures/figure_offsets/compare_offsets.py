@@ -18,28 +18,7 @@ from tqdm import tqdm
 import pickle
 
 
-# plt.rc("font", family="Poppins", size=8)
 plt.rc("font", size=12)
-
-
-def alphas_from_gof(
-    gof: np.ndarray,
-    alpha_min: float = 0.05,
-    alpha_max: float = 0.90,
-    robust_percentiles: tuple[float, float] = (5, 95),
-):
-    """
-    Mappe gof (plus grand = meilleur) -> alpha (plus opaque = plus grand alpha)
-    en normalisant de façon robuste via percentiles.
-    """
-    gof = np.asarray(gof, dtype=float)
-    m = np.isfinite(gof)
-
-    lo, hi = np.nanpercentile(gof[m], robust_percentiles)
-    x = (gof - lo) / (hi - lo + 1e-12)
-    x = np.clip(x, 0.0, 1.0)
-
-    return alpha_min + x * (alpha_max - alpha_min)
 
 
 class seissolxdmfExtended(seissolxdmf.seissolxdmf):
@@ -249,14 +228,6 @@ def compute_rms_offset(folder, offset_data, bestmodel, threshold_z):
     #################################################################
     # Compute weighted RMS and plot individual figure of each model #
     #################################################################
-
-    plotIndiComp = False  # if True, individual figures are plotted for each model
-    plotbestmodels = False  # if True, plot the 10 best models color-coded with the RMS
-    slip_at_traces = []
-    results = {
-        "faultfn": [],
-        "offset_rms": [],
-    }
 
     fig, ax = init_all_offsets_figure(acc_dist, dfo)
     # Loop on each model in the output filder
