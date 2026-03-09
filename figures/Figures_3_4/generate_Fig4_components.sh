@@ -17,3 +17,12 @@ python ../2025MyanmarEarthquake/figures/CCTV_analysis/compare_CCTV.py extracted_
 
 #CCTV strike-slip vs dip slip
 python ../2025MyanmarEarthquake/figures/CCTV_analysis/compare_CCTV.py extracted_output/dyn_$best --align --strike_vs
+
+mkdir -p figures_for_fig4
+mv figures/comparison_offset_all_models.svg figures_for_fig4
+mv figures/moment_rate.svg figures_for_fig4
+mv figures/NPW_comparison.svg figures_for_fig4
+mv figures/CCTV_comparison.svg figures_for_fig4
+mv CCTV_comparison_strike_vs_dip_slip.svg figures_for_fig4
+
+realpath figures_for_fig4
