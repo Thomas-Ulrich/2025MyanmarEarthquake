@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-import numpy as np
-import datetime
-import glob
-import sys
 import argparse
-import matplotlib.pyplot as plt
-import matplotlib
-import re
-from scipy.interpolate import interp1d
-import pandas as pd
+import glob
 import os
-from scipy.integrate import cumtrapz
+import pickle
+import re
 
-# from scipy.integrate import cumulative_trapezoid
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.colors import Normalize
+from scipy.interpolate import interp1d
 
 
 class FaultReceiverData:
@@ -155,6 +153,22 @@ SR_threshold = 0.15
 
 switchNormal = False
 
+folder_path = os.path.dirname(args.fault_receiver)
+basename = os.path.basename(args.fault_receiver)
+
+fn = (
+    f"{folder_path}/../compiled_results.pkl"
+    if folder_path != ""
+    else "compiled_results.pkl"
+)
+with open(fn, "rb") as f:
+    df = pickle.load(f)
+
+lo, hi = np.percentile(df["gof_slip_rate"].to_numpy(), [5, 95])
+cmap = plt.cm.Blues
+norm = Normalize(vmin=lo, vmax=1.0)
+
+
 rec_files = sorted(glob.glob(f"{args.fault_receiver}*-faultreceiver*"))
 rec_files = [fn for fn in rec_files if "dyn-kinmod" not in fn and "fl33" not in fn]
 
@@ -180,14 +194,16 @@ if not args.align_using_slip_rate_threshold:
     extra_data = np.column_stack((time_before, SR_before))
     data_Latour = np.vstack((extra_data, data_Latour))
 
-
-results = {}
-wrms = np.full(len(rec_files), np.inf, dtype=float)
-results["fault_receiver_fname"] = rec_files
-results["slip_rate_rms"] = wrms
+wrms_dict = {}
 
 
-for i, fname in enumerate(rec_files):
+for i, row in df.sort_values("gof_slip_rate").iterrows():
+    if not row["faultfn"].startswith(basename):
+        continue
+    files = f"{folder_path}/{row['faultfn']}-faultreceiver*.dat"
+    fname = glob.glob(files)[0]
+    gof = row["gof_slip_rate"]
+
     frd = FaultReceiverData(fname, switchNormal)
 
     id0 = get_rupture_time(frd.SRs)
@@ -209,7 +225,7 @@ for i, fname in enumerate(rec_files):
             sim_id = int(match.group(1))
         else:
             sim_id = None  # or raise an error
-        plt.plot(time_shifted, sr_shifted, color="#edeeeeff")
+        plt.plot(time_shifted, sr_shifted, color=cmap(norm(gof)), alpha=0.2)
 
         if args.best_model in fname:
             time_shifted_best = time_shifted
@@ -224,9 +240,22 @@ for i, fname in enumerate(rec_files):
     # Compute RMS error, ignoring NaNs
     valid = ~np.isnan(sr_interp)
     rms = np.sqrt(np.mean((sr_interp[valid] - data_Latour[valid, 1]) ** 2))
-    wrms[i] = rms
+    wrms_dict[fname] = rms  # Store using fname as key
     print(f"{fname}, onset {t0:.2f}s, RMS error vs Latour: {rms:.4f}")
 
+
+# Create a results list aligned with rec_files list
+# This ensures 'results' and 'wrms' have the same length and order
+final_wrms = []
+final_files = []
+
+for fn in rec_files:
+    if fn in wrms_dict:
+        final_files.append(fn)
+        final_wrms.append(wrms_dict[fn])
+
+wrms = np.array(final_wrms)
+results = {"fault_receiver_fname": final_files, "slip_rate_rms": wrms}
 print(results)
 
 top10_indices = np.argsort(wrms)[:10]
@@ -263,7 +292,7 @@ for k, modeli in enumerate(top10_indices[::-1]):
         # Plot preferred model
         (line,) = plt.plot(time_shifted, sr_shifted, label=label)
         if args.fault_slip:
-            slip = cumtrapz(sr_shifted, time_shifted, initial=0)
+            slip = np.cumtrapz(sr_shifted, time_shifted, initial=0)
             ax.plot(time_shifted, slip, linestyle="--", color=line.get_color())
 
 
@@ -281,7 +310,7 @@ if len(top10_indices) == 1:
     plt.xlabel(f"Time (s) since {t0:.1f}s post-rupture onset")
     plt.legend(frameon=False, ncol=1, loc="upper right")
 else:
-    plt.xlabel(f"Time (s) after signal alignment")
+    plt.xlabel("Time (s) after signal alignment")
     plt.legend(
         frameon=False,
         fontsize=8,
@@ -295,18 +324,27 @@ plt.plot(
     data_Latour[:, 0],
     data_Latour[:, 1],
     marker="o",
-    markersize=4,
-    linestyle="None",
+    markersize=1.5,
+    linestyle="-",
+    linewidth="0.5",
     color="black",
 )
 
-df = pd.read_csv("Kearse_and_Kaneko.csv")
+
+dfkearse = pd.read_csv("Kearse_and_Kaneko.csv")
+
 plt.plot(
-    df["time(s)"] - 13.8,
-    df["strike_slip_velocity(m/s)"],
+    dfkearse["time(s)"] - 13.8,
+    dfkearse["strike_slip_velocity(m/s)"],
     label="Kearse and Kaneko (2025)",
-    color="orange",
+    marker=(5, 2),
+    markersize=3,
+    markeredgewidth=0.5,
+    linestyle="-",
+    linewidth=0.5,
+    color="black",
 )
+
 
 if args.plot_all:
     plt.plot(time_shifted_best, sr_shifted_best, color="blue")
@@ -360,7 +398,7 @@ else:
                 label=f"{sim_id}, {float(wrms[modeli]):.2f}",
             )
 
-    ax.set_xlabel(f"Strike slip (m)")
+    ax.set_xlabel("Strike slip (m)")
     ax.set_ylabel("Dip slip (m)")
 
     ax = axes[1]

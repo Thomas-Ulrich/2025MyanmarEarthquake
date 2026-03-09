@@ -8,7 +8,7 @@
    version="1.1"
    id="svg62533"
    inkscape:version="1.4.2 (1:1.4.2+202505120737+ebf0e940d0)"
-   sodipodi:docname="Figure3.svg"
+   sodipodi:docname="Fig3_dynamic_rupture.svg"
    inkscape:export-filename="/home/mathilde/Bureau/Work/myanmar/figure/Figure3_dynamic_rupture.png"
    inkscape:export-xdpi="300"
    inkscape:export-ydpi="300"
@@ -27,9 +27,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="1.1543025"
-     inkscape:cx="599.06307"
-     inkscape:cy="388.54633"
+     inkscape:zoom="0.98751268"
+     inkscape:cx="567.08133"
+     inkscape:cy="338.72983"
      inkscape:window-width="2560"
      inkscape:window-height="1360"
      inkscape:window-x="0"
@@ -526,9 +526,9 @@
          style="font-style:normal;font-weight:normal;font-size:18.6667px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect62234);display:inline;fill:#000000;fill-opacity:1;stroke:none"><tspan
            x="553.50586"
            y="-29.868068"
-           id="tspan2"><tspan
+           id="tspan4"><tspan
              style="font-family:FreeSans;-inkscape-font-specification:FreeSans"
-             id="tspan1">5s               10s               15s              30s             50s              75s              85s</tspan></tspan></text></g><g
+             id="tspan3">5s               10s               15s              30s             50s              75s              85s</tspan></tspan></text></g><g
        id="g53323"
        transform="matrix(0.37442084,0,0,0.51958883,226.29785,76.127535)"><g
          id="g53325"
