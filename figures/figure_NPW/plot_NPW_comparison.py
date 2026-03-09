@@ -110,10 +110,10 @@ for i, row in df.sort_values("gof_reg").iterrows():
         # Find the corresponding station
         sta2comp = matchStation2Receiver(coords, station_coords)
         if len(sta2comp) == 0:
-            #print(f"Station not found in the metadata file for receiver")
+            # print(f"Station not found in the metadata file for receiver")
             continue
         else:
-            #print(f"Found matching station for receiver: {sta2comp}")
+            # print(f"Found matching station for receiver: {sta2comp}")
             ax.plot(time_obs, data_obs, "k")
 
             time_synth = synth[:, 0]
