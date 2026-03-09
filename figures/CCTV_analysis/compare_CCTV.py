@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 import argparse
-import datetime
 import glob
 import os
 import pickle
 import re
-import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -13,26 +11,6 @@ import numpy as np
 import pandas as pd
 from matplotlib.colors import Normalize
 from scipy.interpolate import interp1d
-
-
-def alphas_from_gof(
-    gof: np.ndarray,
-    alpha_min: float = 0.05,
-    alpha_max: float = 0.90,
-    robust_percentiles: tuple[float, float] = (5, 95),
-):
-    """
-    Mappe gof (plus grand = meilleur) -> alpha (plus opaque = plus grand alpha)
-    en normalisant de façon robuste via percentiles.
-    """
-    gof = np.asarray(gof, dtype=float)
-    m = np.isfinite(gof)
-
-    lo, hi = np.nanpercentile(gof[m], robust_percentiles)
-    x = (gof - lo) / (hi - lo + 1e-12)
-    x = np.clip(x, 0.0, 1.0)
-
-    return alpha_min + x * (alpha_max - alpha_min)
 
 
 class FaultReceiverData:
@@ -178,8 +156,14 @@ switchNormal = False
 folder_path = os.path.dirname(args.fault_receiver)
 basename = os.path.basename(args.fault_receiver)
 
-with open(f"{folder_path}/../compiled_results.pkl", "rb") as f:
+fn = (
+    f"{folder_path}/../compiled_results.pkl"
+    if folder_path != ""
+    else "compiled_results.pkl"
+)
+with open(fn, "rb") as f:
     df = pickle.load(f)
+
 lo, hi = np.percentile(df["gof_slip_rate"].to_numpy(), [5, 95])
 cmap = plt.cm.Blues
 norm = Normalize(vmin=lo, vmax=1.0)
@@ -260,7 +244,7 @@ for i, row in df.sort_values("gof_slip_rate").iterrows():
     print(f"{fname}, onset {t0:.2f}s, RMS error vs Latour: {rms:.4f}")
 
 
-# 3. Create a results list aligned with your actual rec_files list
+# Create a results list aligned with rec_files list
 # This ensures 'results' and 'wrms' have the same length and order
 final_wrms = []
 final_files = []
@@ -308,7 +292,7 @@ for k, modeli in enumerate(top10_indices[::-1]):
         # Plot preferred model
         (line,) = plt.plot(time_shifted, sr_shifted, label=label)
         if args.fault_slip:
-            slip = cumtrapz(sr_shifted, time_shifted, initial=0)
+            slip = np.cumtrapz(sr_shifted, time_shifted, initial=0)
             ax.plot(time_shifted, slip, linestyle="--", color=line.get_color())
 
 
@@ -326,7 +310,7 @@ if len(top10_indices) == 1:
     plt.xlabel(f"Time (s) since {t0:.1f}s post-rupture onset")
     plt.legend(frameon=False, ncol=1, loc="upper right")
 else:
-    plt.xlabel(f"Time (s) after signal alignment")
+    plt.xlabel("Time (s) after signal alignment")
     plt.legend(
         frameon=False,
         fontsize=8,
@@ -414,7 +398,7 @@ else:
                 label=f"{sim_id}, {float(wrms[modeli]):.2f}",
             )
 
-    ax.set_xlabel(f"Strike slip (m)")
+    ax.set_xlabel("Strike slip (m)")
     ax.set_ylabel("Dip slip (m)")
 
     ax = axes[1]
