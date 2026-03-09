@@ -17,4 +17,4 @@ frame_rate=20
 ffmpeg -y -framerate $frame_rate -i output/SR_%d.png \
        -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -f mp4 -vcodec libx264 \
        -pix_fmt yuv420p -q:v 1 "Mynamar_${prefix}_SR.mp4"
-ffmpeg -i "Mynamar_${prefix}_SR.mp4" -vf "fps=${frmae_rake},scale=2500:-1:flags=lanczos" "Mynamar_${prefix}_SR.gif"
+ffmpeg -i "Mynamar_${prefix}_SR.mp4" -vf "fps=${frame_rake},scale=2500:-1:flags=lanczos" "Mynamar_${prefix}_SR.gif"
