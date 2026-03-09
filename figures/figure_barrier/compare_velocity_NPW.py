@@ -18,8 +18,8 @@ matplotlib.rc("ytick", labelsize=ps)
 
 # --- Parameters ---
 fmin = 0.05
-fmax = 0.5
-t_before = 30  # Changed to positive for easier logic
+fmax = 0.8
+t_before = 30
 t_after = 110
 network = "GE"
 station = "NPW"
@@ -134,7 +134,7 @@ def get_seismic_shift(tr_obs, tr_syn, t_start=40, t_end=80):
 myproj = "+proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=95.93 +lat_0=22.00"
 station_coords = {"NPW": (96.14, 19.78)}
 
-fn = f"GE.NPW_unfiltered_velocity.mseed"
+fn = "GE.NPW_unfiltered_velocity.mseed"
 if os.path.exists(fn):
     st = read(fn)
     origin_time = UTCDateTime("2025-03-28T06:20:52.715Z")
@@ -145,19 +145,19 @@ else:
 st.filter("bandpass", freqmin=fmin, freqmax=fmax, corners=4, zerophase=True)
 
 # Prepare Plot
-#fig, ax = plt.subplots(1, 1, figsize=(7.5, 3))
 fig, ax = plt.subplots(1, 1, figsize=(8.5, 3))
 
 # 1. Process and Plot SeisSol (Synthetics)
 
 prefix_path_list = [
-    "../seissol_outputs/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95",
-    "seissol_output/dyn_0280_coh0.25_1.0_B0.95_C0.15_R0.95_barrier_dc",
+    "seissol_output/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95",
+    "seissol_output/dyn_0380_coh0.25_1.0_B0.95_C0.15_R0.95_tear_2p5km",
 ]
 
 for prefix_path in prefix_path_list:
     files = glob.glob(f"{prefix_path}-r*")
     for fname in files[::-1]:
+        print(fname)
         coords, synth = readSeisSolReceiver(fname)
         sta2comp = matchStation2Receiver(coords, station_coords, myproj)
 
@@ -187,6 +187,8 @@ for prefix_path in prefix_path_list:
                 label = "Preferred (at NPW"
                 color = "blue"
                 line_style = "-"
+                if abs(coords[1] + 2.458418896780e05) > 1:
+                    continue
             else:
                 label = "Barrier"
                 color = "orange"
@@ -221,7 +223,6 @@ for tr in st.select(component="N"):
 
 # --- Formatting ---
 ax.set_xlim(40, 80)  # Focus on the event duration
-#ax.set_xlabel("Time since origin [s]")
 ax.set_xlabel("Time (s)")
 ax.set_ylabel("Velocity (m/s)")
 ax.legend(loc="upper right", frameon=False)
@@ -230,4 +231,4 @@ ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 plt.tight_layout()
 plt.savefig("NPW_velocity_comparison_N.svg")
-#plt.show()
+plt.show()
