@@ -70,10 +70,12 @@ def plot_xy_panel(fig, ax, df, dim_vars, vz, cmap, contour_lines=None):
 
 df = pd.read_pickle("compiled_results.pkl")
 
-gofa = pd.read_csv("Gc.csv", sep=",")
-gofa["sim_id"] = gofa["faultfn"].str.extract(r"dyn[/_-]([^_]+)_")[0].astype(int)
-gofa = gofa[["Gc", "sim_id"]]
-df = pd.merge(df, gofa, on="sim_id", how="left")
+if 'Gc' not in df.columns:
+    print("reading Gc from Gc.csv")
+    gofa = pd.read_csv("Gc.csv", sep=",")
+    gofa["sim_id"] = gofa["faultfn"].str.extract(r"dyn[/_-]([^_]+)_")[0].astype(int)
+    gofa = gofa[["Gc", "sim_id"]]
+    df = pd.merge(df, gofa, on="sim_id", how="left")
 if "sigman" in df.columns:
     dim_var_x = {"col": "sigman", "label": r"$\sigma_n$"}
 elif "R" in df.columns:

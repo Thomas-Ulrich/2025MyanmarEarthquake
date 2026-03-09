@@ -94,8 +94,8 @@ class ReceiverData:
         self.v = mydata[:, variablelist == "v2"].flatten()
         self.w = mydata[:, variablelist == "v3"].flatten()
 
-rec = ReceiverData('../seissol_outputs/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95-receiver-00004-00029.dat')
-frec = FaultReceiverData('../seissol_outputs/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95-faultreceiver-00001-00029.dat')
+rec = ReceiverData('../seissol_outputs/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95-receiver-00004-00020.dat')
+frec = FaultReceiverData('../seissol_outputs/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95-faultreceiver-00001-00020.dat')
 
 
 # Create two stacked subplots

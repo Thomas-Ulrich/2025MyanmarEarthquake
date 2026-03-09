@@ -38,7 +38,7 @@ light_quake_visualizer ../seissol_outputs/R_ratio.xdmf        --variable d_c    
 light_quake_visualizer ../seissol_outputs/R_ratio.xdmf        --variable mu_s             --cmap davos_r --color_range "0.35 0.65"     --zoom $zoom --window $win_size --output mu_s         --time $time --view $view #--scalar_bar "$scalar_bar"
 light_quake_visualizer ../seissol_outputs/R_ratio.xdmf        --variable pos_pn0              --cmap davos_r0 --color_range "0 1.6e7"     --zoom $zoom --window $win_size --output pn0         --time $time --view $view #--scalar_bar "$scalar_bar"
 light_quake_visualizer ../seissol_outputs/R_ratio.xdmf        --variable tau              --cmap lipari_r0 --color_range "0 9e6"     --zoom $zoom --window $win_size --output tau         --time $time --view $view #--scalar_bar "$scalar_bar"
-light_quake_visualizer ../seissol_outputs/R_ratio.xdmf        --variable R_ratio           --cmap batlowW_r  --color_range "0 1.0"       --zoom $zoom --window $win_size --output Rratio          --time $time --view $view --vtk_meshes "CCTV.vtk red 1;NPW.vtk blue 1" #--scalar_bar "$scalar_bar"
+light_quake_visualizer ../seissol_outputs/R_ratio.xdmf        --variable R_ratio           --cmap batlowW_r  --color_range "-0.7 1.0"       --zoom $zoom --window $win_size --output Rratio          --time $time --view $view --vtk_meshes "CCTV.vtk red 1;NPW.vtk blue 1" #--scalar_bar "$scalar_bar"
 
 image_combiner --inputs output/d_c.png output/mu_s.png  output/pn0.png output/tau.png output/Rratio.png \
                --rel $rel 1.0 \
