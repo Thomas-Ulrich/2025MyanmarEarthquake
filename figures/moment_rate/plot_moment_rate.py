@@ -28,26 +28,6 @@ def read_usgs_moment_rate(fname):
     return mr_ref
 
 
-def alphas_from_gof(
-    gof: np.ndarray,
-    alpha_min: float = 0.05,
-    alpha_max: float = 0.90,
-    robust_percentiles: tuple[float, float] = (5, 95),
-):
-    """
-    Mappe gof (plus grand = meilleur) -> alpha (plus opaque = plus grand alpha)
-    en normalisant de façon robuste via percentiles.
-    """
-    gof = np.asarray(gof, dtype=float)
-    m = np.isfinite(gof)
-
-    lo, hi = np.nanpercentile(gof[m], robust_percentiles)
-    x = (gof - lo) / (hi - lo + 1e-12)
-    x = np.clip(x, 0.0, 1.0)
-
-    return alpha_min + x * (alpha_max - alpha_min)
-
-
 def add_seissol_data(ax, label, fn, plotted_lines, color, linewidth, alpha=1):
     df = pd.read_csv(fn)
     df = df.pivot_table(index="time", columns="variable", values="measurement")
@@ -102,23 +82,18 @@ with open(fn, "rb") as f:
     df = pickle.load(f)
 
 
-# Calcul des alpha depuis gof_MRF
-df["alpha_mrf"] = alphas_from_gof(
-    df["gof_MRF"].to_numpy(), alpha_min=0.05, alpha_max=0.5
-)
-print(df[["faultfn", "gof_MRF", "alpha_mrf"]].head(10))
+print(df[["faultfn", "gof_MRF"]].head(10))
 
 
 lo, hi = np.percentile(df["gof_MRF"].to_numpy(), [5, 95])
 
 
-cmap = plt.cm.Blues  # _r : bon (petit RMS) -> couleurs "fortes" (à toi de choisir)
+cmap = plt.cm.Blues
 norm = Normalize(vmin=lo, vmax=1.0)
 
 
 for _, row in df.sort_values("gof_MRF").iterrows():
     name = row["faultfn"]
-    alpha = row["alpha_mrf"]
     gof = row["gof_MRF"]
 
     plotted_lines = add_seissol_data(
@@ -149,7 +124,7 @@ line = ax.plot(
 )
 plotted_lines.append(line[0])
 
-# Scardec "#f3a966ff"
+# Scardec
 df = pd.read_csv("MomentRateObs/scardec.csv")
 Mw = computeMw("Scardec", df["x"], df[" y"])
 
@@ -163,9 +138,9 @@ line = ax.plot(
 )
 plotted_lines.append(line[0])
 
-# Melgar #c448c2ff"
+# Melgar
 df = pd.read_csv("MomentRateObs/Melgar.csv")
-Mw = computeMw("Merlgar", df["x"], df[" y"])
+Mw = computeMw("Melgar", df["x"], df[" y"])
 
 line = ax.plot(
     df["x"],
