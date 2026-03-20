@@ -182,7 +182,21 @@ matplotlib.rc("ytick", labelsize=ps)
 fig = plt.figure(figsize=(4.0, 7.5 * 5.0 / 16), dpi=80)
 ax = fig.add_subplot(111)
 
-data_Latour = np.loadtxt("Latour.txt", delimiter=",")
+
+def get_valid_path(fname):
+    # find fname in . or tmp
+    local_path = fname
+    hard_tmp = os.path.join("/tmp", fname)
+
+    for path in [local_path, hard_tmp]:
+        if os.path.exists(path):
+            return path
+    raise FileNotFoundError(f"Error: '{fname}' not found")
+
+
+path = get_valid_path("Latour.txt")
+data_Latour = np.loadtxt(path, delimiter=",")
+
 # let add some zero after 2s
 time_after = np.arange(2, 4, 0.1)
 SR_after = np.zeros_like(time_after)
@@ -331,7 +345,8 @@ plt.plot(
 )
 
 
-dfkearse = pd.read_csv("Kearse_and_Kaneko.csv")
+path = get_valid_path("Kearse_and_Kaneko.csv")
+dfkearse = pd.read_csv(path)
 
 plt.plot(
     dfkearse["time(s)"] - 13.8,
