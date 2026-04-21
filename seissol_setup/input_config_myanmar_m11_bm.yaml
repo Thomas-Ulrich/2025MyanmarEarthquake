@@ -1,9 +1,9 @@
-config: input_config_myanmar_m11.yaml
+config: input_config_myanmar_m11_bm.yaml
 custom_setup_files:
 - files_myanmar_m11/FL33_34_fault.yaml
 - files_myanmar_m11/FL33_34_fault_inst.yaml
 - files_myanmar_m11_bm/material_ref.yaml
-- files_myanmar_m11_bm/material_ref.yaml
+- files_myanmar_m11_bm/material.yaml
 - files_myanmar_m11/model_ASAGI.nc
 - files_myanmar_m11/seissol_station_5.txt
 - files_myanmar_m11/offsets.csv
