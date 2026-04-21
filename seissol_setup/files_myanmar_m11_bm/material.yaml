@@ -1,0 +1,32 @@
+!Switch
+[rho, mu, lambda]: !EvalModel
+    parameters: [rho, mu, lambda, alpha]
+    model: !Switch
+        [rho, mu, lambda]: !Include 'yaml_files/material_ref.yaml'
+        [alpha]: !Any
+          components:
+            - !GroupFilter
+              groups: 2
+              components: !ConstantMap
+                map:
+                  alpha: 1.1
+            - !GroupFilter
+              groups: 0
+              components: !ConstantMap
+                map:
+                  alpha: 0.9
+            - !ConstantMap
+                map:
+                  alpha: 1.0
+    components: !LuaMap
+      returns: [rho, mu, lambda]
+      function: |
+       function f (x)
+        fac2 = x.alpha * x.alpha
+        return {
+          rho = x.rho,
+          mu = fac2 * x.mu,
+          lambda = fac2 * x.lambda
+        }
+        end
+

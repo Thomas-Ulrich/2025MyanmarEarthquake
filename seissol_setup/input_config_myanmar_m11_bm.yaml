@@ -1,0 +1,46 @@
+config: input_config_myanmar_m11.yaml
+custom_setup_files:
+- files_myanmar_m11/FL33_34_fault.yaml
+- files_myanmar_m11/FL33_34_fault_inst.yaml
+- files_myanmar_m11_bm/material_ref.yaml
+- files_myanmar_m11_bm/material_ref.yaml
+- files_myanmar_m11/model_ASAGI.nc
+- files_myanmar_m11/seissol_station_5.txt
+- files_myanmar_m11/offsets.csv
+- files_myanmar_m11/global_observations
+- files_myanmar_m11/regional_observations 
+- files_myanmar_m11/Kearse_and_Kaneko.csv
+- files_myanmar_m11/Latour.txt
+- files_myanmar_m11/compare_CCTV.py
+event_id: us7000pn9s_1
+fault_mesh_size: auto
+fault_receiver_file: files_myanmar_m11/fault_receiver.txt
+fault_reference: -1.0,0.0,0.0,1
+finite_fault_model: usgs
+first_simulation_id: 0
+gmsh_vertex_union_tolerance: 500.0
+gof_components: slip_distribution 1.5,fault_offsets 1.5,moment_rate_function,regional_wf
+  2.0,teleseismic_body_wf,teleseismic_surface_wf,slip_rate 2.5
+hypocenter: 96.001129,21.983021,10.0
+mesh: meshes/Myanmar_gebco_down2_with_fault_m11_bm_1
+mode: grid_search
+parameters: B=1.0,0.95,0.9 C=0.05,0.1,0.15,0.2,0.25,0.3 R=0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5
+  cohesion=0.25,1.0,2
+projection: +proj=tmerc +datum=WGS84 +k=0.9996 +lon_0=95.92 +lat_0=22.00
+reference_moment_rate_functions:
+- - auto
+- - files_myanmar_m11/scardec.csv
+  - SCARDEC
+- - files_myanmar_m11/Melgar.csv
+  - Melgar et al. (2025)
+regional_seismic_stations: GE.NPW
+regional_synthetics_generator: seissol
+regional_wf_components: g0_N, g1_ofZ
+seissol_end_time: 150.0
+teleseismic_body_wf_components: p0_Z, s1_T 0.5
+teleseismic_stations: IU.YSS,IU.GUMO,IU.NWAO,IU.KMBO,IU.BILL,IU.MA2
+teleseismic_surface_wf_components: g2_ENZ
+template_folder: files_myanmar_m11_bm/templates
+terminator: 'False'
+tmax: 200.0
+velocity_model: auto
