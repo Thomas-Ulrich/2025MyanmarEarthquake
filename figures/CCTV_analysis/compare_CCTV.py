@@ -24,7 +24,10 @@ class FaultReceiverData:
             fid.readline()
             variablelist = fid.readline().split("=")[1].split(",")
             variablelist = [a.strip().strip('"') for a in variablelist]
-            self.x = float(fid.readline().split()[2])
+            line = fid.readline()
+            if line.split()[1] == "Receiver":
+                line = fid.readline()
+            self.x = float(line.split()[2])
             self.y = float(fid.readline().split()[2])
             self.z = float(fid.readline().split()[2])
             self.Pn0 = float(fid.readline().split()[2])
@@ -164,10 +167,6 @@ fn = (
 with open(fn, "rb") as f:
     df = pickle.load(f)
 
-lo, hi = np.percentile(df["gof_slip_rate"].to_numpy(), [5, 95])
-cmap = plt.cm.Blues
-norm = Normalize(vmin=lo, vmax=1.0)
-
 
 rec_files = sorted(glob.glob(f"{args.fault_receiver}*-faultreceiver*"))
 rec_files = [fn for fn in rec_files if "dyn-kinmod" not in fn and "fl33" not in fn]
@@ -194,7 +193,7 @@ def get_valid_path(fname):
     raise FileNotFoundError(f"Error: '{fname}' not found")
 
 
-path = get_valid_path("Latour.txt")
+path = get_valid_path("tmp/Latour.txt")
 data_Latour = np.loadtxt(path, delimiter=",")
 
 # let add some zero after 2s
@@ -211,12 +210,11 @@ if not args.align_using_slip_rate_threshold:
 wrms_dict = {}
 
 
-for i, row in df.sort_values("gof_slip_rate").iterrows():
+for i, row in df.iterrows():
     if not row["faultfn"].startswith(basename):
         continue
     files = f"{folder_path}/{row['faultfn']}-faultreceiver*.dat"
     fname = glob.glob(files)[0]
-    gof = row["gof_slip_rate"]
 
     frd = FaultReceiverData(fname, switchNormal)
 
@@ -239,7 +237,6 @@ for i, row in df.sort_values("gof_slip_rate").iterrows():
             sim_id = int(match.group(1))
         else:
             sim_id = None  # or raise an error
-        plt.plot(time_shifted, sr_shifted, color=cmap(norm(gof)), alpha=0.2)
 
         if args.best_model in fname:
             time_shifted_best = time_shifted
@@ -257,6 +254,37 @@ for i, row in df.sort_values("gof_slip_rate").iterrows():
     wrms_dict[fname] = rms  # Store using fname as key
     print(f"{fname}, onset {t0:.2f}s, RMS error vs Latour: {rms:.4f}")
 
+    # Compute GoF and store it directly in the row
+    df.at[i, "gof_slip_rate"] = np.exp(-rms)
+
+
+lo, hi = np.percentile(df["gof_slip_rate"].to_numpy(), [5, 95])
+cmap = plt.cm.Blues
+norm = Normalize(vmin=lo, vmax=1.0)
+
+for i, row in df.sort_values("gof_slip_rate").iterrows():
+    if not row["faultfn"].startswith(basename):
+        continue
+    files = f"{folder_path}/{row['faultfn']}-faultreceiver*.dat"
+    fname = glob.glob(files)[0]
+
+    frd = FaultReceiverData(fname, switchNormal)
+
+    id0 = get_rupture_time(frd.SRs)
+    if not id0:
+        continue
+
+    t0 = frd.Time[id0]
+    if not args.align_using_slip_rate_threshold:
+        t0 = get_max_cross_correlation(frd, data_Latour)
+
+    # Shift time and extract relevant arrays
+    time_shifted = frd.Time[id0:] - t0
+    sr_shifted = frd.SRs[id0:]
+
+    if args.plot_all:
+        gof = row["gof_slip_rate"]
+        plt.plot(time_shifted, sr_shifted, color=cmap(norm(gof)), alpha=0.2)
 
 # Create a results list aligned with rec_files list
 # This ensures 'results' and 'wrms' have the same length and order
@@ -345,7 +373,7 @@ plt.plot(
 )
 
 
-path = get_valid_path("Kearse_and_Kaneko.csv")
+path = get_valid_path("tmp/Kearse_and_Kaneko.csv")
 dfkearse = pd.read_csv(path)
 
 plt.plot(
