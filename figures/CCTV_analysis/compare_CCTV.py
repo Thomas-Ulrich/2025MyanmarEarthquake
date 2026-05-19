@@ -258,7 +258,7 @@ for i, row in df.iterrows():
     df.at[i, "gof_slip_rate"] = np.exp(-rms)
 
 
-lo, hi = np.percentile(df["gof_slip_rate"].to_numpy(), [5, 95])
+lo, hi = np.nanpercentile(df["gof_slip_rate"].to_numpy(), [5, 95])
 cmap = plt.cm.Blues
 norm = Normalize(vmin=lo, vmax=1.0)
 
