@@ -48,17 +48,20 @@ def add_seissol_data(ax, label, fn, plotted_lines, color, linewidth, alpha=1):
     return plotted_lines
 
 
-fig = plt.figure(figsize=(9.5, 3), dpi=80)
-ax = fig.add_subplot(111)
 
 ps = 12
 scale = 1e19
 matplotlib.rcParams.update({"font.size": ps})
-plt.rcParams["font.family"] = "sans"
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = "FreeSans"
+
 matplotlib.rc("xtick", labelsize=ps)
 matplotlib.rc("ytick", labelsize=ps)
 matplotlib.rcParams["lines.linewidth"] = 0.5
 plotted_lines = []
+
+fig = plt.figure(figsize=(9.5, 3), dpi=80)
+ax = fig.add_subplot(111)
 
 
 parser = argparse.ArgumentParser(
@@ -183,6 +186,7 @@ ax.legend(plotted_lines, labels, frameon=False, **kargs)
 
 # plt.legend(frameon=False)
 fn = "figures/moment_rate.svg"
+
 plt.savefig(fn)
 print(f"done writing {fn}")
 
