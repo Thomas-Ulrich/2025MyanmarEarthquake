@@ -102,23 +102,23 @@ for B in df["B"].unique():
             dim_vars["y"]["label"] = None if j > 0 else dim_vars_0["y"]["label"]
             contour_lines = None
             if (i, j) == (0, 0):
-                dim_vars["v"] = {"col": "duration", "label": "duration (s)"}
-                contour_lines = [85, 90, 100, 140, 150]
+                dim_vars["v"] = {"col": "duration", "label": "Duration (s)"}
+                contour_lines = [85, 90, 100, 150, 170]
             elif (i, j) == (0, 1):
                 dim_vars["v"] = {"col": "Mw", "label": "Mw"}
             elif (i, j) == (1, 0):
                 dim_vars["v"] = {
                     "col": "area_max_R",
-                    "label": "fault area with R=0.97 (km²)",
+                    "label": "Fault area with R=0.97 (km²)",
                 }
                 dim_vars["v"] = {
                     "col": "Gc",
-                    "label": "fracture energy (MJ/m²)",
+                    "label": "Fracture energy (MJ/m²)",
                 }
                 contour_lines = [0.5, 1, 1.5]
 
             elif (i, j) == (1, 1):
-                dim_vars["v"] = {"col": "combined_gof", "label": "combined GOF"}
+                dim_vars["v"] = {"col": "combined_gof", "label": "Combined GOF"}
             plot_xy_panel(
                 fig,
                 ax[i, j],
