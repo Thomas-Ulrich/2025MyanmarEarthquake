@@ -27,7 +27,10 @@ class FaultReceiverData:
             fid.readline()
             variablelist = fid.readline().split("=")[1].split(",")
             variablelist = [a.strip().strip('"') for a in variablelist]
-            self.x = float(fid.readline().split()[2])
+            line = fid.readline()
+            if line.split()[1] == "Receiver":
+                line = fid.readline()
+            self.x = float(line.split()[2])
             self.y = float(fid.readline().split()[2])
             self.z = float(fid.readline().split()[2])
             self.Pn0 = float(fid.readline().split()[2])
@@ -82,7 +85,10 @@ class ReceiverData:
             fid.readline()
             variablelist = fid.readline().split("=")[1].split(",")
             variablelist = np.array([a.strip().strip('"') for a in variablelist])
-            self.x = float(fid.readline().split()[2])
+            line = fid.readline()
+            if line.split()[1] == "Receiver":
+                line = fid.readline()
+            self.x = float(line.split()[2])
             self.y = float(fid.readline().split()[2])
             self.z = float(fid.readline().split()[2])
             mydata = np.loadtxt(fid)
@@ -94,8 +100,8 @@ class ReceiverData:
         self.v = mydata[:, variablelist == "v2"].flatten()
         self.w = mydata[:, variablelist == "v3"].flatten()
 
-rec = ReceiverData('../seissol_outputs/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95-receiver-00004-00020.dat')
-frec = FaultReceiverData('../seissol_outputs/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95-faultreceiver-00001-00020.dat')
+rec = ReceiverData('extracted_output/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95-receiver-00004.dat')
+frec = FaultReceiverData('extracted_output/dyn_0080_coh0.25_1.0_B0.95_C0.15_R0.95-faultreceiver-00001.dat')
 
 
 # Create two stacked subplots
@@ -134,7 +140,7 @@ ax2.semilogy(rec.Time[:-1], np.abs(np.diff(rec.v)), label=r"$a_y$")
 ax2.semilogy(rec.Time[:-1], np.abs(np.diff(rec.w)), label=r"$a_z$")
 ax2.axvline(22.7, color='magenta', linestyle='--', linewidth=1, label='P waves')
 ax2.axvline(28.5, color='darkblue', linestyle='--', linewidth=1, label='S waves')
-ax2.axvline(30.5, color='red', linestyle='--', linewidth=1, label='slip onset')
+ax2.axvline(30.5, color='red', linestyle='--', linewidth=1, label='Slip onset')
 
 ax2.set_ylabel("| Acceleration | (m/s²)")
 ax2.set_xlabel("Time (s)")

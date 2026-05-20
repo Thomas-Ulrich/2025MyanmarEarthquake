@@ -220,6 +220,8 @@ for i, row in df.iterrows():
 
     id0 = get_rupture_time(frd.SRs)
     if not id0:
+        wrms_dict[fname] = np.inf
+        df.at[i, "gof_slip_rate"] = 0.0
         continue
 
     t0 = frd.Time[id0]
