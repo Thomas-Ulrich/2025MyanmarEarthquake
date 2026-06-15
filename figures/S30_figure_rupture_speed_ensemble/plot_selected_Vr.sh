@@ -8,7 +8,7 @@ indices=(17 156 94 8 93 111 144 5)
 
 for i in "${indices[@]}"; do
     printf -v num "%04d" "$i"
-    files+=(extracted_output/dyn_"$num"*fault.xdmf)
+    files+=(extracted_output_last/dyn_"$num"*fault.xdmf)
 done
 
 printf "%s\n" "${files[@]}"

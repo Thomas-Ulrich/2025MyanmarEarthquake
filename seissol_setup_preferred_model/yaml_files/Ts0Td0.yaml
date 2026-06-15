@@ -1,0 +1,27 @@
+!Any
+    components:
+     - !GroupFilter
+        groups: 3
+        components: !AffineMap
+          matrix:
+            ua: [-0.08712528751364558, 0.9961972688900428, -0.00043096598973178975]
+            ub: [-0.18168426873043672, -0.015464359972949614, 0.9832353126624946]
+          translation:
+            ua: 417155.70585592603
+            ub: 27049.391732179618
+          components: !Any
+            - !ASAGI
+                file: ASAGI_files/fault3_TsTdTn.nc
+                parameters: [Ts0, Td0, Pn0]
+                var: data
+                interpolation: linear
+            - !ConstantMap
+              map:
+                Ts0: 0.0
+                Td0: 0.0
+                Pn0: 0.0
+     - !ConstantMap
+      map:
+        Ts0: 0.0
+        Td0: 0.0
+        Pn0: 0.0

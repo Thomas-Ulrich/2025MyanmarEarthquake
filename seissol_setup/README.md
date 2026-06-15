@@ -7,10 +7,10 @@ This guide outlines the steps for running the dynamic rupture workflow to
 
 ## 1. Installing the Workflow
 
-Install the `rapid-earthquake-dynamics` package at version `v0.4.2`:
+Install the `rapid-earthquake-dynamics` package at version `v0.4.3`:
 
 ```bash
-pip install git+https://github.com/Thomas-Ulrich/rapid-earthquake-dynamics.git@v0.4.2
+pip install git+https://github.com/Thomas-Ulrich/rapid-earthquake-dynamics.git@v0.4.3
 ```
 
 ## 3. Prepare the Earthquake Scenario
@@ -25,13 +25,15 @@ redyn init --config input_config_myanmar_m11.yaml
 
 This will create a directory containing all necessary input files.
 
+Download the mesh file from https://zenodo.org/records/20325545
+
 ## 4. Run the Workflow on HPC (e.g., superNG)
 
 Copy the generated folder to your HPC system (e.g., superNG) and execute the
  workflow using:
 
 ```bash
-git clone --branch v0.4.2 https://github.com/Thomas-Ulrich/rapid-earthquake-dynamics.git
+git clone --branch v0.4.3 https://github.com/Thomas-Ulrich/rapid-earthquake-dynamics.git
 sh rapid-earthquake-dynamics/run_full_workflow_supercomputer.sh
 ```
 

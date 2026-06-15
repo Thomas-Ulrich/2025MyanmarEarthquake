@@ -17,7 +17,7 @@ from matplotlib.colors import Normalize
 from tqdm import tqdm
 import pickle
 
-
+plt.rcParams['svg.fonttype'] = 'none'
 plt.rc("font", size=12)
 
 
@@ -205,7 +205,7 @@ def compute_rms_offset(folder, offset_data, bestmodel, threshold_z):
 
     with open(f"{folder_path}/../compiled_results.pkl", "rb") as f:
         df = pickle.load(f)
-
+    
     # 1) Trier par gof_offsets (du pire au meilleur, par ex.)
     df_sorted = df.sort_values("gof_offsets", ascending=True)
 
